@@ -42,6 +42,11 @@ NOT VERIFIED. Exit codes are 0 verified, 1 not verified, 2 bad input, so the
 three cases can be told apart in a script.
 
 Use `--require KEY_ID` (repeatable) to fail unless a particular key signed.
+
+To check that an outcome really reports on a given receipt, pass both:
+
+    receipts verify outcome.json --keys jwks.json --receipt receipt.json
+
 Verification needs only the public key directory, never access to the issuer.
 
 ## Development

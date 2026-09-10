@@ -18,6 +18,14 @@ PUBLIC_KEYS = {
 RECEIPT_VECTOR = json.loads(
     (VECTOR_DIR / "001-receipt-written-non-canonically.json").read_text(encoding="utf-8")
 )
+OUTCOME_VECTOR = json.loads(
+    (VECTOR_DIR / "003-outcome-disputed-with-loss.json").read_text(encoding="utf-8")
+)
+
+
+def write_envelope(path: Path, envelope: dict) -> Path:
+    path.write_text(json.dumps(envelope), encoding="utf-8")
+    return path
 
 
 @pytest.fixture
@@ -29,9 +37,17 @@ def keys_file(tmp_path) -> Path:
 
 @pytest.fixture
 def envelope_file(tmp_path) -> Path:
-    path = tmp_path / "envelope.json"
-    path.write_text(json.dumps(RECEIPT_VECTOR["envelope"]), encoding="utf-8")
-    return path
+    return write_envelope(tmp_path / "envelope.json", RECEIPT_VECTOR["envelope"])
+
+
+@pytest.fixture
+def outcome_file(tmp_path) -> Path:
+    return write_envelope(tmp_path / "outcome.json", OUTCOME_VECTOR["envelope"])
+
+
+@pytest.fixture
+def receipt_file(tmp_path) -> Path:
+    return write_envelope(tmp_path / "receipt.json", RECEIPT_VECTOR["envelope"])
 
 
 def test_verifies_a_good_envelope(envelope_file, keys_file, capsys):
@@ -128,3 +144,68 @@ def test_input_errors_are_distinguishable_from_a_failed_verification():
     # A caller scripting this needs to tell "the signature is bad" apart from
     # "you pointed me at the wrong file".
     assert BAD_INPUT != NOT_VERIFIED != VERIFIED
+
+
+def test_verifies_a_bound_pair(outcome_file, receipt_file, keys_file, capsys):
+    exit_code = main(
+        ["verify", str(outcome_file), "--keys", str(keys_file), "--receipt", str(receipt_file)]
+    )
+
+    out = capsys.readouterr().out
+    assert exit_code == VERIFIED
+    assert "binding    OK" in out
+
+
+def test_a_receipt_altered_after_the_fact_breaks_the_binding(tmp_path, outcome_file, keys_file, capsys):
+    # The receipt id is unchanged, so only the content commitment catches this.
+    altered = copy.deepcopy(RECEIPT_VECTOR["envelope"])
+    altered["payload"]["action"]["value"]["amount"] = "4200"
+    path = write_envelope(tmp_path / "altered.json", altered)
+
+    exit_code = main(["verify", str(outcome_file), "--keys", str(keys_file), "--receipt", str(path)])
+
+    out = capsys.readouterr().out
+    assert exit_code == NOT_VERIFIED
+    assert "binding    BROKEN" in out
+    assert "commits to different receipt content" in out
+
+
+def test_an_outcome_shown_against_an_unrelated_receipt_is_rejected(
+    tmp_path, outcome_file, keys_file, capsys
+):
+    unrelated = copy.deepcopy(RECEIPT_VECTOR["envelope"])
+    unrelated["payload"]["id"] = "rcpt_ffffffffffffffffffffffffffffffff"
+    path = write_envelope(tmp_path / "unrelated.json", unrelated)
+
+    exit_code = main(["verify", str(outcome_file), "--keys", str(keys_file), "--receipt", str(path)])
+
+    out = capsys.readouterr().out
+    assert exit_code == NOT_VERIFIED
+    assert "names a different receipt" in out
+
+
+def test_receipt_flag_is_rejected_when_verifying_a_receipt(envelope_file, receipt_file, keys_file, capsys):
+    exit_code = main(
+        ["verify", str(envelope_file), "--keys", str(keys_file), "--receipt", str(receipt_file)]
+    )
+
+    assert exit_code == BAD_INPUT
+    assert "applies when verifying an outcome" in capsys.readouterr().err
+
+
+def test_receipt_flag_pointing_at_an_outcome_is_rejected(outcome_file, keys_file, capsys):
+    exit_code = main(
+        ["verify", str(outcome_file), "--keys", str(keys_file), "--receipt", str(outcome_file)]
+    )
+
+    assert exit_code == BAD_INPUT
+    assert "does not contain an action receipt" in capsys.readouterr().err
+
+
+def test_names_the_receipt_it_checked_the_binding_against(
+    tmp_path, outcome_file, receipt_file, keys_file, capsys
+):
+    main(["verify", str(outcome_file), "--keys", str(keys_file), "--receipt", str(receipt_file)])
+
+    out = capsys.readouterr().out
+    assert "receipt    rcpt_0123456789abcdef0123456789abcdef signed by key-1" in out
