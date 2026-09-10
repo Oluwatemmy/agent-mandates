@@ -248,6 +248,10 @@ class OutcomeAttestation(BaseModel):
     type: Literal["outcome"] = "outcome"
     id: OutcomeId
     receipt_id: ReceiptId
+    # Commits to the receipt's canonical bytes, not just its name. A receipt id
+    # is chosen by whoever issues it, so a reference alone would let an outcome
+    # be presented against a receipt whose content nobody has checked.
+    receipt_hash: Sha256Digest
     issued_at: UtcTimestamp
     status: OutcomeStatus
     resolution: DisputeResolution | None = None

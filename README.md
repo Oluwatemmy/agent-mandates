@@ -29,7 +29,7 @@ implementation can reproduce the same signature bytes.
 - [x] Canonical bytes (RFC 8785)
 - [x] Ed25519 signing and verification
 - [x] Verifier CLI
-- [ ] Outcome binding
+- [x] Outcome binding
 - [ ] Mandate scope checking
 - [ ] Delegation chains
 

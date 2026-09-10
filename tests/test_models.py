@@ -21,6 +21,7 @@ from agent_receipts.models import (
 )
 
 PARAMS_HASH = "sha256:" + "a" * 64
+RECEIPT_HASH = "sha256:" + "b" * 64
 ISSUED_AT = datetime(2026, 9, 9, 14, 3, 11, tzinfo=timezone.utc)
 
 
@@ -121,6 +122,7 @@ def test_outcome_attestation_rejects_a_receipt_id_of_the_wrong_type():
         OutcomeAttestation(
             id=new_outcome_id(),
             receipt_id=new_outcome_id(),
+            receipt_hash=RECEIPT_HASH,
             issued_at=ISSUED_AT,
             status=OutcomeStatus.DISPUTED,
         )
@@ -131,6 +133,7 @@ def test_outcome_attestation_binds_to_its_receipt():
     outcome = OutcomeAttestation(
         id=new_outcome_id(),
         receipt_id=receipt.id,
+        receipt_hash=RECEIPT_HASH,
         issued_at=ISSUED_AT + timedelta(days=14),
         status=OutcomeStatus.DISPUTED,
         loss=Money(amount=Decimal("42.50"), currency="USD"),

@@ -28,6 +28,7 @@ from agent_receipts.models import (
 )
 
 PARAMS_HASH = "sha256:" + "a" * 64
+RECEIPT_HASH = "sha256:" + "b" * 64
 EXPIRES_AT = datetime(2026, 9, 10, 14, 3, 11, tzinfo=timezone.utc)
 
 PRECOMPOSED_E_ACUTE = "café"
@@ -41,6 +42,7 @@ def test_differently_written_equivalent_documents_serialize_identically():
     as_written_by_one_caller = OutcomeAttestation(
         id=(outcome_id := new_outcome_id()),
         receipt_id=receipt_id,
+        receipt_hash=RECEIPT_HASH,
         issued_at=datetime(2026, 9, 23, 11, 11, 2, 999_400, tzinfo=berlin),
         status=OutcomeStatus.DISPUTED,
         loss=Money(amount=Decimal("42.50"), currency="USD"),
@@ -48,6 +50,7 @@ def test_differently_written_equivalent_documents_serialize_identically():
     as_written_by_another = OutcomeAttestation(
         id=outcome_id,
         receipt_id=receipt_id,
+        receipt_hash=RECEIPT_HASH,
         issued_at=datetime(2026, 9, 23, 9, 11, 2, 999_000, tzinfo=timezone.utc),
         status=OutcomeStatus.DISPUTED,
         loss=Money(amount=Decimal("42.5"), currency="USD"),
@@ -85,6 +88,7 @@ def test_timestamps_always_carry_three_fractional_digits_and_a_zulu_suffix():
     outcome = OutcomeAttestation(
         id=new_outcome_id(),
         receipt_id=new_receipt_id(),
+        receipt_hash=RECEIPT_HASH,
         issued_at=datetime(2026, 9, 23, 9, 11, 2, tzinfo=timezone.utc),
         status=OutcomeStatus.COMPLETED,
     )

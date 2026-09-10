@@ -194,6 +194,52 @@ signature and only `crv` and `x` decide what the key is. Both are validated
 strictly, including that `x` decodes as base64url with no invalid characters
 discarded and yields exactly 32 bytes.
 
+## Binding an outcome to its receipt
+
+An outcome attestation carries both `receipt_id` and `receipt_hash`. The id says
+which receipt is meant; the hash says which receipt it actually is.
+
+`receipt_hash` is `sha256:` followed by the hex digest of the receipt's
+**canonical bytes** -- the same bytes its own signature covers, not the bytes it
+happened to arrive in. Two receipts sharing an id but differing anywhere in
+content produce different digests, so the commitment cannot be satisfied by the
+wrong document.
+
+A reference alone would prove nothing: receipt ids are chosen by whoever issues
+them, so an outcome naming `rcpt_...` says only that somebody typed that string.
+
+### Checking a pair
+
+Checking reports every problem found, not the first. Two kinds are reported
+together, and the distinction matters when reading a failure:
+
+**Cryptographic** -- no judgement involved, the commitment either holds or it
+does not:
+
+| Problem | Meaning |
+|---|---|
+| `receipt_id_mismatch` | the outcome names a different receipt |
+| `receipt_hash_mismatch` | the outcome commits to different receipt content |
+
+**Coherence** -- whether the pair describes something that could have happened:
+
+| Problem | Meaning |
+|---|---|
+| `outcome_precedes_action` | the outcome is dated before the action it reports on |
+| `action_was_refused` | the receipt records a refused action, which has no outcome |
+
+An outcome issued at the same instant as its action is allowed; only one dated
+strictly earlier is a problem.
+
+A receipt whose decision was `deny` records that nothing happened, so there is no
+transaction for an outcome to describe. Attaching one means the documents are
+wrong about each other, which is worth catching even though both may verify.
+
+Note what is deliberately **not** constrained: an outcome's loss may exceed the
+action's value, and may be in a different currency. Chargeback fees and foreign
+exchange both make those legitimate, and a format that rejected them would be
+wrong about the world rather than strict.
+
 ## Versioning
 
 Every document carries `v`. Any change to a field name, type, or canonical rule

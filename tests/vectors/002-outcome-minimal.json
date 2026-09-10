@@ -1,11 +1,12 @@
 {
-  "description": "Minimal outcome attestation. Absent optional fields are omitted, never written as null.",
+  "description": "Minimal outcome attestation. Absent optional fields are omitted, never written as null, bound to vector 001.",
   "document_type": "outcome",
   "input": {
     "id": "outc_fedcba9876543210fedcba9876543210",
     "receipt_id": "rcpt_0123456789abcdef0123456789abcdef",
     "issued_at": "2026-09-23T09:11:02Z",
-    "status": "completed"
+    "status": "completed",
+    "receipt_hash": "sha256:61de2e02bbae51b33a15e59c76d0233b2d4956b1d6babafbcb79da00bdab2114"
   },
   "canonical": {
     "v": "0.1",
@@ -13,15 +14,17 @@
     "id": "outc_fedcba9876543210fedcba9876543210",
     "receipt_id": "rcpt_0123456789abcdef0123456789abcdef",
     "issued_at": "2026-09-23T09:11:02.000Z",
-    "status": "completed"
+    "status": "completed",
+    "receipt_hash": "sha256:61de2e02bbae51b33a15e59c76d0233b2d4956b1d6babafbcb79da00bdab2114"
   },
-  "canonical_bytes_sha256": "23194bb5b4d236d6d96296de64c4cd3880e88a2b37b773532dad1cde3ae0c17b",
+  "canonical_bytes_sha256": "3d10b8df6e4f80283ff92b3ec8fbfb345b9d363ebba1589e1f25d2385cb9f942",
   "envelope": {
     "payload": {
       "v": "0.1",
       "type": "outcome",
       "id": "outc_fedcba9876543210fedcba9876543210",
       "receipt_id": "rcpt_0123456789abcdef0123456789abcdef",
+      "receipt_hash": "sha256:61de2e02bbae51b33a15e59c76d0233b2d4956b1d6babafbcb79da00bdab2114",
       "issued_at": "2026-09-23T09:11:02.000Z",
       "status": "completed",
       "resolution": null,
@@ -31,7 +34,7 @@
       {
         "alg": "Ed25519",
         "key_id": "merchant-key",
-        "value": "0D0_QfMvMgRGiYL2sLAAmV_MYgOfYf7ShZLcSrhokf2qR7q0vYGVVh2VjIePfjIA6wc0NUPEAftyTfCQ3L7CCQ"
+        "value": "hOxGbQMEUv91y9Qsq-CyD0ABO7SUh0Frrkqd9p_pdP8I9vih3rxJeUrhwPl1SioxTRyPAlU3ZOnt6uofMvoYAA"
       }
     ]
   }
