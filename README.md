@@ -48,3 +48,11 @@ Verification needs only the public key directory, never access to the issuer.
 
     python -m pip install -e ".[dev]"
     python -m pytest
+
+## License
+
+Copyright 2026 Ajayi Oluwaseyi Temitope.
+
+Licensed under the Apache License, Version 2.0. Apache-2.0 rather than MIT for
+its explicit patent grant: this format is meant to be implemented by other
+parties, who need assurance that no patent claim will be asserted over it later.
