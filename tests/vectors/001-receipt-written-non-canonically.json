@@ -1,0 +1,130 @@
+{
+  "description": "Every value written in a non-canonical form: offset timestamp, trailing-zero amounts, unsorted duplicated scope, decomposed Unicode identifier, bare-origin target, absent optional field.",
+  "document_type": "action",
+  "input": {
+    "id": "rcpt_0123456789abcdef0123456789abcdef",
+    "issued_at": "2026-09-09T16:03:11.999400+02:00",
+    "agent": {
+      "id": "agent:cafe\u0301-bot",
+      "key_id": "key-1"
+    },
+    "principal": {
+      "id": "user:1234",
+      "type": "human"
+    },
+    "mandate": {
+      "id": "mandate:abc",
+      "scope": [
+        "payment.charge",
+        "order.create",
+        "payment.charge"
+      ],
+      "expires_at": "2026-09-10T14:03:11Z",
+      "max_value": {
+        "amount": "100.00",
+        "currency": "USD"
+      }
+    },
+    "action": {
+      "type": "payment.charge",
+      "target": "https://api.example.com",
+      "params_hash": "sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "value": {
+        "amount": "42.50",
+        "currency": "USD"
+      }
+    },
+    "decision": {
+      "outcome": "allow"
+    }
+  },
+  "canonical": {
+    "v": "0.1",
+    "type": "action",
+    "id": "rcpt_0123456789abcdef0123456789abcdef",
+    "issued_at": "2026-09-09T14:03:11.999Z",
+    "agent": {
+      "id": "agent:caf\u00e9-bot",
+      "key_id": "key-1"
+    },
+    "principal": {
+      "id": "user:1234",
+      "type": "human"
+    },
+    "mandate": {
+      "id": "mandate:abc",
+      "scope": [
+        "order.create",
+        "payment.charge"
+      ],
+      "expires_at": "2026-09-10T14:03:11.000Z",
+      "max_value": {
+        "amount": "100",
+        "currency": "USD"
+      }
+    },
+    "action": {
+      "type": "payment.charge",
+      "target": "https://api.example.com",
+      "params_hash": "sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "value": {
+        "amount": "42.5",
+        "currency": "USD"
+      }
+    },
+    "decision": {
+      "outcome": "allow",
+      "reasons": []
+    }
+  },
+  "canonical_bytes_sha256": "61de2e02bbae51b33a15e59c76d0233b2d4956b1d6babafbcb79da00bdab2114",
+  "envelope": {
+    "payload": {
+      "v": "0.1",
+      "type": "action",
+      "id": "rcpt_0123456789abcdef0123456789abcdef",
+      "issued_at": "2026-09-09T14:03:11.999Z",
+      "agent": {
+        "id": "agent:caf\u00e9-bot",
+        "key_id": "key-1"
+      },
+      "principal": {
+        "id": "user:1234",
+        "type": "human"
+      },
+      "mandate": {
+        "id": "mandate:abc",
+        "scope": [
+          "order.create",
+          "payment.charge"
+        ],
+        "expires_at": "2026-09-10T14:03:11.000Z",
+        "max_value": {
+          "amount": "100",
+          "currency": "USD"
+        }
+      },
+      "action": {
+        "type": "payment.charge",
+        "target": "https://api.example.com",
+        "params_hash": "sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+        "value": {
+          "amount": "42.5",
+          "currency": "USD"
+        }
+      },
+      "decision": {
+        "outcome": "allow",
+        "reasons": []
+      },
+      "prev": null
+    },
+    "signatures": [
+      {
+        "alg": "Ed25519",
+        "key_id": "key-1",
+        "value": "8hHfWQYqmNhTk34dCSyutevBaDVW29DlzfcAbFigSKU-XJaG2r9Tsinh8PidPxcGC1jR_mBz0Agb6PRpdeibBg"
+      }
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agent-receipts"
+version = "0.1.0"
+description = "Signed, independently verifiable records of what an AI agent did and what happened as a result."
+requires-python = ">=3.11"
+dependencies = ["pydantic>=2.9", "cryptography>=42.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "rfc8785>=0.1"]
+
+[project.scripts]
+receipts = "agent_receipts.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agent_receipts"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

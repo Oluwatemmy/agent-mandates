@@ -1,0 +1,38 @@
+{
+  "description": "Minimal outcome attestation. Absent optional fields are omitted, never written as null.",
+  "document_type": "outcome",
+  "input": {
+    "id": "outc_fedcba9876543210fedcba9876543210",
+    "receipt_id": "rcpt_0123456789abcdef0123456789abcdef",
+    "issued_at": "2026-09-23T09:11:02Z",
+    "status": "completed"
+  },
+  "canonical": {
+    "v": "0.1",
+    "type": "outcome",
+    "id": "outc_fedcba9876543210fedcba9876543210",
+    "receipt_id": "rcpt_0123456789abcdef0123456789abcdef",
+    "issued_at": "2026-09-23T09:11:02.000Z",
+    "status": "completed"
+  },
+  "canonical_bytes_sha256": "23194bb5b4d236d6d96296de64c4cd3880e88a2b37b773532dad1cde3ae0c17b",
+  "envelope": {
+    "payload": {
+      "v": "0.1",
+      "type": "outcome",
+      "id": "outc_fedcba9876543210fedcba9876543210",
+      "receipt_id": "rcpt_0123456789abcdef0123456789abcdef",
+      "issued_at": "2026-09-23T09:11:02.000Z",
+      "status": "completed",
+      "resolution": null,
+      "loss": null
+    },
+    "signatures": [
+      {
+        "alg": "Ed25519",
+        "key_id": "merchant-key",
+        "value": "0D0_QfMvMgRGiYL2sLAAmV_MYgOfYf7ShZLcSrhokf2qR7q0vYGVVh2VjIePfjIA6wc0NUPEAftyTfCQ3L7CCQ"
+      }
+    ]
+  }
+}

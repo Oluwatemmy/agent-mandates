@@ -1,0 +1,51 @@
+{
+  "description": "Disputed outcome carrying a loss. Scientific-notation and sub-millisecond input reduce to one form.",
+  "document_type": "outcome",
+  "input": {
+    "id": "outc_11112222333344445555666677778888",
+    "receipt_id": "rcpt_0123456789abcdef0123456789abcdef",
+    "issued_at": "2026-09-23T09:11:02.500999Z",
+    "status": "disputed",
+    "resolution": "merchant_lost",
+    "loss": {
+      "amount": "1E+2",
+      "currency": "EUR"
+    }
+  },
+  "canonical": {
+    "v": "0.1",
+    "type": "outcome",
+    "id": "outc_11112222333344445555666677778888",
+    "receipt_id": "rcpt_0123456789abcdef0123456789abcdef",
+    "issued_at": "2026-09-23T09:11:02.500Z",
+    "status": "disputed",
+    "resolution": "merchant_lost",
+    "loss": {
+      "amount": "100",
+      "currency": "EUR"
+    }
+  },
+  "canonical_bytes_sha256": "3406779815c2a06e1e260ce45af16d277d1aedda4e772afc9adcba722aa6ded4",
+  "envelope": {
+    "payload": {
+      "v": "0.1",
+      "type": "outcome",
+      "id": "outc_11112222333344445555666677778888",
+      "receipt_id": "rcpt_0123456789abcdef0123456789abcdef",
+      "issued_at": "2026-09-23T09:11:02.500Z",
+      "status": "disputed",
+      "resolution": "merchant_lost",
+      "loss": {
+        "amount": "100",
+        "currency": "EUR"
+      }
+    },
+    "signatures": [
+      {
+        "alg": "Ed25519",
+        "key_id": "merchant-key",
+        "value": "K-l34UHYCpwpx9Arm-ZlKCZMQzezXAb2IVNXA7nWJKL0Q9TcE6tkTkxa89wObtvx_mKnvkBMyzGOjxltU97aBw"
+      }
+    ]
+  }
+}
