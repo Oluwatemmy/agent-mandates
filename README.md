@@ -36,7 +36,10 @@ implementation can reproduce the same signature bytes.
 - [x] Verifier CLI
 - [x] Outcome binding
 - [x] Mandate scope checking
-- [ ] Delegation chains
+- [x] Principal-signed mandates
+- [x] Delegation chains
+- [ ] Hardening: CI matrix, property-based tests, parser fuzzing
+- [ ] Publish to PyPI
 
 ## Verifying
 
@@ -51,6 +54,11 @@ Use `--require KEY_ID` (repeatable) to fail unless a particular key signed.
 To check a whole chain, pass the documents it rests on:
 
     receipts verify outcome.json --keys jwks.json         --receipt receipt.json --mandate mandate.json
+
+Repeat `--mandate`, root first, to check a delegation chain. Each grant must
+narrow what it received, and the chain must lead back to one principal:
+
+    receipts verify receipt.json --keys jwks.json         --mandate root-grant.json --mandate sub-grant.json
 
 Verification needs only the public key directory, never access to the issuer.
 

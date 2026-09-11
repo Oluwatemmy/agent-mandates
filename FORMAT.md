@@ -349,6 +349,71 @@ Closing that gap requires the mandate to be attested by the principal granting
 it, independently of the agent using it, so that a verifier can check the
 mandate against its grantor rather than against its user.
 
+## Delegation
+
+An agent acting under a grant may pass some of that authority on. The grant it
+issues carries `delegated_from`, naming the mandate it was itself acting under
+by id and hash, and the agent doing the delegating. A chain of mandates
+therefore leads back to the principal who started it, who is the human or
+organization the whole chain answers to.
+
+A delegated grant is signed by the **delegating agent**, not by the principal
+and never by the agent receiving it. A root grant is signed by its principal.
+The envelope enforces whichever applies.
+
+### Attenuation
+
+A delegated grant may narrow what it received but never widen it. This is the
+property that makes a chain worth anything: without it an agent could
+manufacture authority it was never given, which is the one thing delegation
+exists to prevent.
+
+| Problem | Meaning |
+|---|---|
+| `scope_widened` | the delegated scope includes permissions the parent lacked |
+| `expiry_extended` | the delegated grant outlives the one it came from |
+| `ceiling_raised` | the delegated ceiling is above the parent's |
+| `ceiling_removed` | the parent had a ceiling and the delegated grant has none |
+| `ceiling_currency_changed` | the ceilings are in different currencies, so attenuation cannot be checked |
+
+Widening is reported per dimension rather than as a single failure. Which
+dimension was widened is the difference between a misconfigured integration and
+an agent quietly granting itself the ability to spend more.
+
+An unlimited parent may delegate any ceiling, or none. A removed ceiling under a
+limited parent is the widest possible widening, so it is a violation rather than
+a default. Currency changes fail closed, as they do when checking an action
+against a mandate.
+
+Scope is compared as a subset and matched exactly, so narrowing to nothing in
+common is fine and any addition is not.
+
+### Chain structure
+
+| Problem | Meaning |
+|---|---|
+| `not_delegated` | the grant does not say what authority it was passed from |
+| `parent_id_mismatch` | the grant names a different parent mandate |
+| `parent_hash_mismatch` | the grant commits to different parent content |
+| `delegator_was_not_the_grantee` | the delegating agent is not the one the parent was granted to |
+| `principal_changed` | the chain changes which principal it answers to |
+| `delegated_before_its_grant` | the authority was passed on before it had been granted |
+| `delegated_after_its_grant_expired` | the authority was passed on after its grant had expired |
+| `root_is_delegated` | the first grant in the chain is itself delegated |
+| `chain_too_deep` | the chain is longer than 8 grants |
+| `agent_appears_twice` | an agent appears more than once in the chain |
+
+The delegating agent is compared **whole**, so an agent sharing an id but
+presenting another signing key cannot pass on authority it never held.
+
+Chains are capped at 8 grants. A verifier walks a chain link by link, so an
+unbounded one is work an attacker can hand it for free, and eight is far past
+any plausible real delegation depth. An agent appearing twice is rejected,
+which catches both a cycle and an agent delegating to itself.
+
+Problems are reported per position rather than flattened: knowing a chain is
+broken is much less useful than knowing which hop broke it.
+
 ## Versioning
 
 Every document carries `v`. Any change to a field name, type, or canonical rule

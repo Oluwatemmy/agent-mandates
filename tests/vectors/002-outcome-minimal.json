@@ -26,9 +26,7 @@
       "receipt_id": "rcpt_0123456789abcdef0123456789abcdef",
       "receipt_hash": "sha256:289f4dc760da2e07a9f5d57f95dffdaacb152213982a72aecb9158455acd6162",
       "issued_at": "2026-09-23T09:11:02.000Z",
-      "status": "completed",
-      "resolution": null,
-      "loss": null
+      "status": "completed"
     },
     "signatures": [
       {

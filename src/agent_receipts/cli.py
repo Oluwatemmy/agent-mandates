@@ -23,6 +23,11 @@ from agent_receipts.binding import (
     binding_problems,
     mandate_problems,
 )
+from agent_receipts.delegation import (
+    DELEGATION_PROBLEM_DESCRIPTIONS,
+    accountable_principal,
+    chain_problems,
+)
 from agent_receipts.keys import read_key_directory
 from agent_receipts.models import ActionReceipt, Mandate, OutcomeAttestation
 from agent_receipts.scope import VIOLATION_DESCRIPTIONS, allowed_beyond_mandate, scope_violations
@@ -66,8 +71,10 @@ def main(argv: list[str] | None = None) -> int:
     verify.add_argument(
         "--mandate",
         type=Path,
+        action="append",
+        default=[],
         metavar="ENVELOPE",
-        help="the grant a receipt was taken under, to check its authority",
+        help="the grant a receipt was taken under; repeat root first for a delegation chain",
     )
     verify.add_argument(
         "--require",
@@ -92,12 +99,12 @@ def _verify(arguments: argparse.Namespace) -> int:
 
     envelope = _read_envelope(arguments.envelope)
     receipt = _read_receipt(arguments.receipt, envelope) if arguments.receipt else None
-    mandate = _read_mandate(arguments.mandate) if arguments.mandate else None
+    mandates = [_read_mandate(path) for path in arguments.mandate]
 
     action = envelope.payload if isinstance(envelope.payload, ActionReceipt) else None
     if action is None and receipt is not None:
         action = receipt.payload
-    if mandate is not None and action is None:
+    if mandates and action is None:
         raise InputError("--mandate applies when an action receipt is being verified")
 
     signers = verified_signers(envelope, public_keys)
@@ -117,12 +124,12 @@ def _verify(arguments: argparse.Namespace) -> int:
         failures.extend(_report_binding(receipt, envelope.payload, public_keys))
 
     if action is not None:
-        if mandate is None:
+        if not mandates:
             # Authority cannot be checked without the grant, and saying nothing
             # would let a bare signature check read as an authority check.
             _line("scope", "not checked (no mandate supplied)")
         else:
-            failures.extend(_report_authority(mandate, action, public_keys))
+            failures.extend(_report_authority(mandates, action, public_keys))
 
     if failures:
         _line("result", f"NOT VERIFIED ({'; '.join(failures)})")
@@ -155,27 +162,47 @@ def _report_binding(
 
 
 def _report_authority(
-    mandate: SignedEnvelope, receipt: ActionReceipt, public_keys: dict
+    mandates: list[SignedEnvelope], receipt: ActionReceipt, public_keys: dict
 ) -> list[str]:
     failures = []
-    grant = mandate.payload
+    chain = [envelope.payload for envelope in mandates]
 
-    granted_by = verified_signers(mandate, public_keys)
-    _line("mandate", f"{grant.id} granted by {', '.join(sorted(granted_by)) or '-'}")
-    if not granted_by:
-        failures.append("the mandate itself does not verify")
+    for envelope in mandates:
+        granted_by = verified_signers(envelope, public_keys)
+        _line("mandate", f"{envelope.payload.id} granted by {', '.join(sorted(granted_by)) or '-'}")
+        if not granted_by:
+            failures.append(f"mandate {envelope.payload.id} does not verify")
 
+    failures.extend(_report_chain(chain))
+    if failures:
+        # Measuring an action against a chain that does not hold up would
+        # produce a confident answer to the wrong question.
+        return failures
+
+    grant = chain[-1]
     problems = mandate_problems(grant, receipt)
     if problems:
         _line("grant", "NOT THIS RECEIPT'S")
         for problem in sorted(problems):
             _line("", f"- {MANDATE_PROBLEM_DESCRIPTIONS[problem]}")
-        failures.append("the receipt was not taken under this mandate")
-        # Measuring the action against a grant it was not taken under would
-        # produce a confident answer to the wrong question.
-        return failures
+        return failures + ["the receipt was not taken under this mandate"]
 
     return failures + _report_scope(grant, receipt)
+
+
+def _report_chain(chain: list[Mandate]) -> list[str]:
+    positions = chain_problems(chain)
+    if not any(positions):
+        principal = accountable_principal(chain)
+        _line("chain", f"OK, answering to {principal.id} ({principal.type})")
+        return []
+
+    _line("chain", "BROKEN")
+    for index, problems in enumerate(positions):
+        for problem in sorted(problems):
+            where = "the chain" if index == 0 else f"grant {index + 1}"
+            _line("", f"- {where}: {DELEGATION_PROBLEM_DESCRIPTIONS[problem]}")
+    return ["the delegation chain does not hold up"]
 
 
 def _report_scope(mandate: Mandate, receipt: ActionReceipt) -> list[str]:

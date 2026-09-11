@@ -1,0 +1,101 @@
+{
+  "description": "An action taken by the second agent under the delegated grant in vector 004.",
+  "document_type": "action",
+  "input": {
+    "id": "rcpt_99998888777766665555444433332222",
+    "issued_at": "2026-09-09T11:30:00.000Z",
+    "agent": {
+      "id": "agent:sub-bot",
+      "key_id": "key-2"
+    },
+    "principal": {
+      "id": "user:1234",
+      "type": "human",
+      "key_id": "principal-key"
+    },
+    "mandate_id": "mndt_bbbb2222cccc3333dddd4444eeee5555",
+    "mandate_hash": "sha256:96099090c02bfd9fb6db3b3ff197176e06cbc7fa05af848bcd2473510a07aa27",
+    "action": {
+      "type": "payment.charge",
+      "target": "https://api.example.com/v1/orders",
+      "params_hash": "sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "value": {
+        "amount": "12.00",
+        "currency": "USD"
+      }
+    },
+    "decision": {
+      "outcome": "allow"
+    }
+  },
+  "canonical": {
+    "v": "0.2",
+    "type": "action",
+    "id": "rcpt_99998888777766665555444433332222",
+    "issued_at": "2026-09-09T11:30:00.000Z",
+    "agent": {
+      "id": "agent:sub-bot",
+      "key_id": "key-2"
+    },
+    "principal": {
+      "id": "user:1234",
+      "type": "human",
+      "key_id": "principal-key"
+    },
+    "mandate_id": "mndt_bbbb2222cccc3333dddd4444eeee5555",
+    "mandate_hash": "sha256:96099090c02bfd9fb6db3b3ff197176e06cbc7fa05af848bcd2473510a07aa27",
+    "action": {
+      "type": "payment.charge",
+      "target": "https://api.example.com/v1/orders",
+      "params_hash": "sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "value": {
+        "amount": "12",
+        "currency": "USD"
+      }
+    },
+    "decision": {
+      "outcome": "allow",
+      "reasons": []
+    }
+  },
+  "canonical_bytes_sha256": "a69c8a46f200b031ba8c02f1937e5ea3c8add5cc0d5b2a7eabd567e4d013b4a2",
+  "envelope": {
+    "payload": {
+      "v": "0.2",
+      "type": "action",
+      "id": "rcpt_99998888777766665555444433332222",
+      "issued_at": "2026-09-09T11:30:00.000Z",
+      "agent": {
+        "id": "agent:sub-bot",
+        "key_id": "key-2"
+      },
+      "principal": {
+        "id": "user:1234",
+        "type": "human",
+        "key_id": "principal-key"
+      },
+      "mandate_id": "mndt_bbbb2222cccc3333dddd4444eeee5555",
+      "mandate_hash": "sha256:96099090c02bfd9fb6db3b3ff197176e06cbc7fa05af848bcd2473510a07aa27",
+      "action": {
+        "type": "payment.charge",
+        "target": "https://api.example.com/v1/orders",
+        "params_hash": "sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+        "value": {
+          "amount": "12",
+          "currency": "USD"
+        }
+      },
+      "decision": {
+        "outcome": "allow",
+        "reasons": []
+      }
+    },
+    "signatures": [
+      {
+        "alg": "Ed25519",
+        "key_id": "key-2",
+        "value": "JAWB0lBxJrAQnsqZ7KshTOHl7x-RqUidkAX1z5lHNCkb2pf0HzE94dV9NIOfGukXM9-641bIPaGADHkogXyKCQ"
+      }
+    ]
+  }
+}

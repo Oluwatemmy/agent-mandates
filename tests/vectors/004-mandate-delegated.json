@@ -1,0 +1,105 @@
+{
+  "description": "Authority passed from the agent in vector 000 to a second agent, attenuated on every dimension: narrower scope, lower ceiling, earlier expiry. Signed by the delegating agent.",
+  "document_type": "mandate",
+  "input": {
+    "id": "mndt_bbbb2222cccc3333dddd4444eeee5555",
+    "issued_at": "2026-09-09T09:00:00.000Z",
+    "principal": {
+      "id": "user:1234",
+      "type": "human",
+      "key_id": "principal-key"
+    },
+    "agent": {
+      "id": "agent:sub-bot",
+      "key_id": "key-2"
+    },
+    "scope": [
+      "payment.charge"
+    ],
+    "expires_at": "2026-09-10T12:00:00.000Z",
+    "max_value": {
+      "amount": "50.00",
+      "currency": "USD"
+    },
+    "delegated_from": {
+      "mandate_id": "mndt_aaaa1111bbbb2222cccc3333dddd4444",
+      "mandate_hash": "sha256:235afb121f14e82dde427d7ea9b796f8ac1c75a8bc0ac9435b1420841eff0412",
+      "agent": {
+        "id": "agent:cafe\u0301-bot",
+        "key_id": "key-1"
+      }
+    }
+  },
+  "canonical": {
+    "v": "0.2",
+    "type": "mandate",
+    "id": "mndt_bbbb2222cccc3333dddd4444eeee5555",
+    "issued_at": "2026-09-09T09:00:00.000Z",
+    "principal": {
+      "id": "user:1234",
+      "type": "human",
+      "key_id": "principal-key"
+    },
+    "agent": {
+      "id": "agent:sub-bot",
+      "key_id": "key-2"
+    },
+    "scope": [
+      "payment.charge"
+    ],
+    "expires_at": "2026-09-10T12:00:00.000Z",
+    "max_value": {
+      "amount": "50",
+      "currency": "USD"
+    },
+    "delegated_from": {
+      "mandate_id": "mndt_aaaa1111bbbb2222cccc3333dddd4444",
+      "mandate_hash": "sha256:235afb121f14e82dde427d7ea9b796f8ac1c75a8bc0ac9435b1420841eff0412",
+      "agent": {
+        "id": "agent:caf\u00e9-bot",
+        "key_id": "key-1"
+      }
+    }
+  },
+  "canonical_bytes_sha256": "96099090c02bfd9fb6db3b3ff197176e06cbc7fa05af848bcd2473510a07aa27",
+  "envelope": {
+    "payload": {
+      "v": "0.2",
+      "type": "mandate",
+      "id": "mndt_bbbb2222cccc3333dddd4444eeee5555",
+      "issued_at": "2026-09-09T09:00:00.000Z",
+      "principal": {
+        "id": "user:1234",
+        "type": "human",
+        "key_id": "principal-key"
+      },
+      "agent": {
+        "id": "agent:sub-bot",
+        "key_id": "key-2"
+      },
+      "scope": [
+        "payment.charge"
+      ],
+      "expires_at": "2026-09-10T12:00:00.000Z",
+      "max_value": {
+        "amount": "50",
+        "currency": "USD"
+      },
+      "delegated_from": {
+        "mandate_id": "mndt_aaaa1111bbbb2222cccc3333dddd4444",
+        "mandate_hash": "sha256:235afb121f14e82dde427d7ea9b796f8ac1c75a8bc0ac9435b1420841eff0412",
+        "agent": {
+          "id": "agent:caf\u00e9-bot",
+          "key_id": "key-1"
+        }
+      }
+    },
+    "signatures": [
+      {
+        "alg": "Ed25519",
+        "key_id": "key-1",
+        "value": "6CENfM0MyFrHDySINgsZyyqTLfA1AgvIgOgWUR2XKwdZEBvG3zJ_gqmbbR2ufLnr2IdKAZmzXOm6CRg5F2UtDA"
+      }
+    ]
+  }
+}

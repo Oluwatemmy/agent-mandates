@@ -111,9 +111,12 @@ def _required_signer(payload: SignedDocument) -> str | None:
         # The receipt asserts what this agent did.
         return payload.agent.key_id
     if isinstance(payload, Mandate):
-        # The mandate grants authority, which only its principal can do. A grant
-        # signed by the agent receiving it would be the agent authorizing
-        # itself, which is exactly what separating the documents prevents.
+        # A grant is signed by whoever made it. Directly from the principal,
+        # that is the principal; delegated onward, it is the agent passing its
+        # authority along. Either way it is never the agent receiving it, which
+        # is what separating the documents prevents.
+        if payload.delegated_from is not None:
+            return payload.delegated_from.agent.key_id
         return payload.principal.key_id
     return None
 

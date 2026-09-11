@@ -188,6 +188,18 @@ class Principal(BaseModel):
     key_id: Identifier
 
 
+class DelegationLink(BaseModel):
+    """The grant an agent was itself acting under when it delegated onward."""
+
+    model_config = SIGNED_DOCUMENT
+
+    mandate_id: MandateId
+    mandate_hash: Sha256Digest
+    # The delegating agent, which must also be the key that signed the grant.
+    # Named here rather than inferred so the link stands on its own.
+    agent: Agent
+
+
 class Mandate(BaseModel):
     """Authority granted by a principal to a particular agent.
 
@@ -210,6 +222,10 @@ class Mandate(BaseModel):
     scope: Annotated[tuple[Identifier, ...], AfterValidator(_canonical_scope)]
     expires_at: UtcTimestamp
     max_value: Money | None = None
+    # Absent on a grant made by the principal directly. Present when one agent
+    # passes authority to another, naming the grant it was acting under so the
+    # chain can be walked back to an accountable human.
+    delegated_from: DelegationLink | None = None
 
 
 class Action(BaseModel):

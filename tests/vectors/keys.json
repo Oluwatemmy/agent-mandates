@@ -12,6 +12,10 @@
     "merchant-key": {
       "seed_hex": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
       "public_key_hex": "29acbae141bccaf0b22e1a94d34d0bc7361e526d0bfe12c89794bc9322966dd7"
+    },
+    "key-2": {
+      "seed_hex": "0909090909090909090909090909090909090909090909090909090909090909",
+      "public_key_hex": "fd1724385aa0c75b64fb78cd602fa1d991fdebf76b13c58ed702eac835e9f618"
     }
   }
 }

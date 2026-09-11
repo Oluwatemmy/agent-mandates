@@ -6,6 +6,8 @@ from pathlib import Path
 
 import pytest
 from support import (
+    DELEGATED_RECEIPT_VECTOR,
+    DELEGATED_VECTOR,
     MANDATE_VECTOR,
     OUTCOME_VECTOR,
     PRIVATE_KEYS,
@@ -355,3 +357,76 @@ def test_mandate_flag_pointing_at_a_receipt_is_rejected(envelope_file, keys_file
 
     assert exit_code == BAD_INPUT
     assert "does not contain a mandate" in capsys.readouterr().err
+
+
+@pytest.fixture
+def delegated_mandate_file(tmp_path) -> Path:
+    return write_envelope(tmp_path / "delegated.json", DELEGATED_VECTOR["envelope"])
+
+
+@pytest.fixture
+def delegated_receipt_file(tmp_path) -> Path:
+    return write_envelope(tmp_path / "sub-receipt.json", DELEGATED_RECEIPT_VECTOR["envelope"])
+
+
+def test_a_sound_delegation_chain_verifies(
+    delegated_receipt_file, mandate_file, delegated_mandate_file, keys_file, capsys
+):
+    exit_code = main(
+        [
+            "verify", str(delegated_receipt_file),
+            "--keys", str(keys_file),
+            "--mandate", str(mandate_file),
+            "--mandate", str(delegated_mandate_file),
+        ]
+    )
+
+    out = capsys.readouterr().out
+    assert exit_code == VERIFIED
+    assert "chain      OK, answering to user:1234 (human)" in out
+    assert "scope      OK" in out
+
+
+def test_a_widened_delegation_names_the_hop_that_broke(
+    tmp_path, delegated_receipt_file, mandate_file, keys_file, capsys
+):
+    widened = document(DELEGATED_VECTOR).model_copy(
+        update={"max_value": Money(amount=Decimal("500"), currency="USD")}
+    )
+    path = write_envelope(
+        tmp_path / "widened.json",
+        sign(widened, "key-1", PRIVATE_KEYS["key-1"]).model_dump(mode="json", exclude_none=True),
+    )
+
+    exit_code = main(
+        [
+            "verify", str(delegated_receipt_file),
+            "--keys", str(keys_file),
+            "--mandate", str(mandate_file),
+            "--mandate", str(path),
+        ]
+    )
+
+    out = capsys.readouterr().out
+    assert exit_code == NOT_VERIFIED
+    assert "chain      BROKEN" in out
+    assert "grant 2: the delegated ceiling is above the parent's" in out
+    # Scope is not reported against a chain that does not hold up.
+    assert "scope" not in out
+
+
+def test_a_chain_given_out_of_order_is_rejected(
+    delegated_receipt_file, mandate_file, delegated_mandate_file, keys_file, capsys
+):
+    exit_code = main(
+        [
+            "verify", str(delegated_receipt_file),
+            "--keys", str(keys_file),
+            "--mandate", str(delegated_mandate_file),
+            "--mandate", str(mandate_file),
+        ]
+    )
+
+    out = capsys.readouterr().out
+    assert exit_code == NOT_VERIFIED
+    assert "the first grant in the chain is itself delegated" in out

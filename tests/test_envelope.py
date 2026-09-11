@@ -53,7 +53,7 @@ def test_signing_is_reproducible_from_the_seed(vector_path):
 
     resigned = sign(document(vector), signer, PRIVATE_KEYS[signer])
 
-    assert resigned.model_dump(mode="json") == vector["envelope"]
+    assert resigned.model_dump(mode="json", exclude_none=True) == vector["envelope"]
 
 
 def test_envelope_key_order_does_not_affect_verification():
