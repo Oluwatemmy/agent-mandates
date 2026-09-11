@@ -13,7 +13,9 @@ from __future__ import annotations
 
 import argparse
 import sys
+from datetime import datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from pydantic import ValidationError
 
@@ -29,9 +31,16 @@ from agent_receipts.delegation import (
     chain_problems,
 )
 from agent_receipts.keys import read_key_directory
-from agent_receipts.models import ActionReceipt, Mandate, OutcomeAttestation
+from agent_receipts.models import ActionReceipt, Mandate, Money, OutcomeAttestation
 from agent_receipts.scope import VIOLATION_DESCRIPTIONS, allowed_beyond_mandate, scope_violations
 from agent_receipts.signing import SignedEnvelope, verified_signers
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+    from cryptography.hazmat.primitives.asymmetric import ed25519
+
+    PublicKeys = Mapping[str, ed25519.Ed25519PublicKey]
 
 VERIFIED = 0
 NOT_VERIFIED = 1
@@ -98,12 +107,19 @@ def _verify(arguments: argparse.Namespace) -> int:
         raise InputError(f"cannot read key directory: {error}") from error
 
     envelope = _read_envelope(arguments.envelope)
-    receipt = _read_receipt(arguments.receipt, envelope) if arguments.receipt else None
+    payload = envelope.payload
+
+    supporting_receipt: tuple[SignedEnvelope, ActionReceipt] | None = None
+    if arguments.receipt:
+        supporting_receipt = _read_receipt(arguments.receipt, envelope)
     mandates = [_read_mandate(path) for path in arguments.mandate]
 
-    action = envelope.payload if isinstance(envelope.payload, ActionReceipt) else None
-    if action is None and receipt is not None:
-        action = receipt.payload
+    action: ActionReceipt | None = None
+    if isinstance(payload, ActionReceipt):
+        action = payload
+    elif supporting_receipt is not None:
+        action = supporting_receipt[1]
+
     if mandates and action is None:
         raise InputError("--mandate applies when an action receipt is being verified")
 
@@ -112,7 +128,7 @@ def _verify(arguments: argparse.Namespace) -> int:
         _line(label, value)
     _line("signed by", ", ".join(sorted(signers)) if signers else "-")
 
-    failures = []
+    failures: list[str] = []
     if not signers:
         failures.append("no signature checks out against this directory")
 
@@ -120,8 +136,11 @@ def _verify(arguments: argparse.Namespace) -> int:
     if missing:
         failures.append(f"required {', '.join(missing)} did not sign")
 
-    if receipt is not None:
-        failures.extend(_report_binding(receipt, envelope.payload, public_keys))
+    if supporting_receipt is not None:
+        # _read_receipt only accepts a supporting receipt when the document
+        # under test is an outcome, so this narrowing always holds.
+        assert isinstance(payload, OutcomeAttestation)
+        failures.extend(_report_binding(*supporting_receipt, payload, public_keys))
 
     if action is not None:
         if not mandates:
@@ -140,16 +159,19 @@ def _verify(arguments: argparse.Namespace) -> int:
 
 
 def _report_binding(
-    receipt: SignedEnvelope, outcome: OutcomeAttestation, public_keys: dict
+    envelope: SignedEnvelope,
+    receipt: ActionReceipt,
+    outcome: OutcomeAttestation,
+    public_keys: PublicKeys,
 ) -> list[str]:
     failures = []
 
-    receipt_signers = verified_signers(receipt, public_keys)
-    _line("receipt", f"{receipt.payload.id} signed by {', '.join(sorted(receipt_signers)) or '-'}")
+    receipt_signers = verified_signers(envelope, public_keys)
+    _line("receipt", f"{receipt.id} signed by {', '.join(sorted(receipt_signers)) or '-'}")
     if not receipt_signers:
         failures.append("the receipt itself does not verify")
 
-    problems = binding_problems(receipt.payload, outcome)
+    problems = binding_problems(receipt, outcome)
     if problems:
         _line("binding", "BROKEN")
         for problem in sorted(problems):
@@ -162,16 +184,18 @@ def _report_binding(
 
 
 def _report_authority(
-    mandates: list[SignedEnvelope], receipt: ActionReceipt, public_keys: dict
+    mandates: list[tuple[SignedEnvelope, Mandate]],
+    receipt: ActionReceipt,
+    public_keys: PublicKeys,
 ) -> list[str]:
     failures = []
-    chain = [envelope.payload for envelope in mandates]
+    chain = [grant for _, grant in mandates]
 
-    for envelope in mandates:
+    for envelope, grant in mandates:
         granted_by = verified_signers(envelope, public_keys)
-        _line("mandate", f"{envelope.payload.id} granted by {', '.join(sorted(granted_by)) or '-'}")
+        _line("mandate", f"{grant.id} granted by {', '.join(sorted(granted_by)) or '-'}")
         if not granted_by:
-            failures.append(f"mandate {envelope.payload.id} does not verify")
+            failures.append(f"mandate {grant.id} does not verify")
 
     failures.extend(_report_chain(chain))
     if failures:
@@ -185,9 +209,9 @@ def _report_authority(
         _line("grant", "NOT THIS RECEIPT'S")
         for problem in sorted(problems):
             _line("", f"- {MANDATE_PROBLEM_DESCRIPTIONS[problem]}")
-        return failures + ["the receipt was not taken under this mandate"]
+        return [*failures, "the receipt was not taken under this mandate"]
 
-    return failures + _report_scope(grant, receipt)
+    return [*failures, *_report_scope(grant, receipt)]
 
 
 def _report_chain(chain: list[Mandate]) -> list[str]:
@@ -230,21 +254,23 @@ def _read_envelope(path: Path) -> SignedEnvelope:
         raise InputError(f"{path} is not a valid envelope\n{error}") from error
 
 
-def _read_mandate(path: Path) -> SignedEnvelope:
-    mandate = _read_envelope(path)
-    if not isinstance(mandate.payload, Mandate):
+def _read_mandate(path: Path) -> tuple[SignedEnvelope, Mandate]:
+    envelope = _read_envelope(path)
+    grant = envelope.payload
+    if not isinstance(grant, Mandate):
         raise InputError(f"{path} does not contain a mandate")
-    return mandate
+    return envelope, grant
 
 
-def _read_receipt(path: Path, envelope: SignedEnvelope) -> SignedEnvelope:
+def _read_receipt(path: Path, envelope: SignedEnvelope) -> tuple[SignedEnvelope, ActionReceipt]:
     if not isinstance(envelope.payload, OutcomeAttestation):
         raise InputError("--receipt applies when verifying an outcome attestation")
 
-    receipt = _read_envelope(path)
-    if not isinstance(receipt.payload, ActionReceipt):
+    envelope = _read_envelope(path)
+    record = envelope.payload
+    if not isinstance(record, ActionReceipt):
         raise InputError(f"{path} does not contain an action receipt")
-    return receipt
+    return envelope, record
 
 
 def _describe(payload: ActionReceipt | OutcomeAttestation | Mandate) -> list[tuple[str, str]]:
@@ -292,11 +318,11 @@ def _line(label: str, value: str) -> None:
     print(f"{label:<{LABEL_WIDTH}} {value}")
 
 
-def _money(money) -> str:
+def _money(money: Money) -> str:
     return f"{money.amount} {money.currency}"
 
 
-def _timestamp(moment) -> str:
+def _timestamp(moment: datetime) -> str:
     return f"{moment:%Y-%m-%dT%H:%M:%S}.{moment.microsecond // 1000:03d}Z"
 
 

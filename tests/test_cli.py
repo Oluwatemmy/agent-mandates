@@ -5,6 +5,12 @@ from decimal import Decimal
 from pathlib import Path
 
 import pytest
+
+from agent_receipts.binding import mandate_digest
+from agent_receipts.cli import BAD_INPUT, NOT_VERIFIED, VERIFIED, main
+from agent_receipts.keys import jwks_from_public_keys
+from agent_receipts.models import ActionReceipt, Decision, DecisionOutcome, Mandate, Money
+from agent_receipts.signing import sign
 from support import (
     DELEGATED_RECEIPT_VECTOR,
     DELEGATED_VECTOR,
@@ -15,13 +21,6 @@ from support import (
     RECEIPT_VECTOR,
     document,
 )
-
-from agent_receipts.binding import mandate_digest
-from agent_receipts.cli import BAD_INPUT, NOT_VERIFIED, VERIFIED, main
-from agent_receipts.keys import jwks_from_public_keys
-from agent_receipts.models import ActionReceipt, Decision, DecisionOutcome, Mandate, Money
-from agent_receipts.signing import sign
-
 
 
 def signed_receipt(path: Path, receipt: ActionReceipt) -> Path:
@@ -116,7 +115,10 @@ def test_require_passes_when_the_named_key_signed(envelope_file, keys_file):
 
 def test_a_directory_without_the_signer_does_not_verify(tmp_path, envelope_file, capsys):
     path = tmp_path / "other-keys.json"
-    path.write_text(json.dumps(jwks_from_public_keys({"merchant-key": PUBLIC_KEYS["merchant-key"]})), encoding="utf-8")
+    path.write_text(
+        json.dumps(jwks_from_public_keys({"merchant-key": PUBLIC_KEYS["merchant-key"]})),
+        encoding="utf-8",
+    )
 
     exit_code = main(["verify", str(envelope_file), "--keys", str(path)])
 
@@ -167,13 +169,17 @@ def test_verifies_a_bound_pair(outcome_file, receipt_file, keys_file, capsys):
     assert "binding    OK" in out
 
 
-def test_a_receipt_altered_after_the_fact_breaks_the_binding(tmp_path, outcome_file, keys_file, capsys):
+def test_a_receipt_altered_after_the_fact_breaks_the_binding(
+    tmp_path, outcome_file, keys_file, capsys
+):
     # The receipt id is unchanged, so only the content commitment catches this.
     altered = copy.deepcopy(RECEIPT_VECTOR["envelope"])
     altered["payload"]["action"]["value"]["amount"] = "4200"
     path = write_envelope(tmp_path / "altered.json", altered)
 
-    exit_code = main(["verify", str(outcome_file), "--keys", str(keys_file), "--receipt", str(path)])
+    exit_code = main(
+        ["verify", str(outcome_file), "--keys", str(keys_file), "--receipt", str(path)]
+    )
 
     out = capsys.readouterr().out
     assert exit_code == NOT_VERIFIED
@@ -188,14 +194,18 @@ def test_an_outcome_shown_against_an_unrelated_receipt_is_rejected(
     unrelated["payload"]["id"] = "rcpt_ffffffffffffffffffffffffffffffff"
     path = write_envelope(tmp_path / "unrelated.json", unrelated)
 
-    exit_code = main(["verify", str(outcome_file), "--keys", str(keys_file), "--receipt", str(path)])
+    exit_code = main(
+        ["verify", str(outcome_file), "--keys", str(keys_file), "--receipt", str(path)]
+    )
 
     out = capsys.readouterr().out
     assert exit_code == NOT_VERIFIED
     assert "names a different receipt" in out
 
 
-def test_receipt_flag_is_rejected_when_verifying_a_receipt(envelope_file, receipt_file, keys_file, capsys):
+def test_receipt_flag_is_rejected_when_verifying_a_receipt(
+    envelope_file, receipt_file, keys_file, capsys
+):
     exit_code = main(
         ["verify", str(envelope_file), "--keys", str(keys_file), "--receipt", str(receipt_file)]
     )
@@ -310,7 +320,9 @@ def test_a_mandate_the_receipt_was_not_taken_under_is_rejected(
     )
     path = signed_mandate(tmp_path / "widened.json", widened)
 
-    exit_code = main(["verify", str(envelope_file), "--keys", str(keys_file), "--mandate", str(path)])
+    exit_code = main(
+        ["verify", str(envelope_file), "--keys", str(keys_file), "--mandate", str(path)]
+    )
 
     out = capsys.readouterr().out
     assert exit_code == NOT_VERIFIED
@@ -326,10 +338,14 @@ def test_the_receipt_in_a_pair_is_checked_against_its_grant(
 ):
     exit_code = main(
         [
-            "verify", str(outcome_file),
-            "--keys", str(keys_file),
-            "--receipt", str(receipt_file),
-            "--mandate", str(mandate_file),
+            "verify",
+            str(outcome_file),
+            "--keys",
+            str(keys_file),
+            "--receipt",
+            str(receipt_file),
+            "--mandate",
+            str(mandate_file),
         ]
     )
 
@@ -374,10 +390,14 @@ def test_a_sound_delegation_chain_verifies(
 ):
     exit_code = main(
         [
-            "verify", str(delegated_receipt_file),
-            "--keys", str(keys_file),
-            "--mandate", str(mandate_file),
-            "--mandate", str(delegated_mandate_file),
+            "verify",
+            str(delegated_receipt_file),
+            "--keys",
+            str(keys_file),
+            "--mandate",
+            str(mandate_file),
+            "--mandate",
+            str(delegated_mandate_file),
         ]
     )
 
@@ -400,10 +420,14 @@ def test_a_widened_delegation_names_the_hop_that_broke(
 
     exit_code = main(
         [
-            "verify", str(delegated_receipt_file),
-            "--keys", str(keys_file),
-            "--mandate", str(mandate_file),
-            "--mandate", str(path),
+            "verify",
+            str(delegated_receipt_file),
+            "--keys",
+            str(keys_file),
+            "--mandate",
+            str(mandate_file),
+            "--mandate",
+            str(path),
         ]
     )
 
@@ -420,10 +444,14 @@ def test_a_chain_given_out_of_order_is_rejected(
 ):
     exit_code = main(
         [
-            "verify", str(delegated_receipt_file),
-            "--keys", str(keys_file),
-            "--mandate", str(delegated_mandate_file),
-            "--mandate", str(mandate_file),
+            "verify",
+            str(delegated_receipt_file),
+            "--keys",
+            str(keys_file),
+            "--mandate",
+            str(delegated_mandate_file),
+            "--mandate",
+            str(mandate_file),
         ]
     )
 

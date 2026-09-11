@@ -19,9 +19,10 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from enum import StrEnum
+from itertools import pairwise
 
 from agent_receipts.binding import mandate_digest
-from agent_receipts.models import Mandate
+from agent_receipts.models import Mandate, Principal
 
 # A verifier walks a chain link by link, so an unbounded one is work an attacker
 # can hand it for free. Eight is far past any plausible real delegation depth.
@@ -123,11 +124,11 @@ def chain_problems(chain: Sequence[Mandate]) -> tuple[frozenset[DelegationProble
     if len(set(agents)) != len(agents):
         root_problems.add(DelegationProblem.AGENT_APPEARS_TWICE)
 
-    links = (delegation_problems(parent, child) for parent, child in zip(chain, chain[1:]))
+    links = (delegation_problems(parent, child) for parent, child in pairwise(chain))
     return (frozenset(root_problems), *links)
 
 
-def accountable_principal(chain: Sequence[Mandate]):
+def accountable_principal(chain: Sequence[Mandate]) -> Principal:
     """The principal a chain answers to, which is the root grant's."""
     if not chain:
         raise ValueError("an empty chain has no principal")

@@ -18,7 +18,14 @@ from typing import Annotated, Literal
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric import ed25519
-from pydantic import AfterValidator, BaseModel, ConfigDict, Field, StringConstraints, model_validator
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    ConfigDict,
+    Field,
+    StringConstraints,
+    model_validator,
+)
 
 from agent_receipts.canonical import SignedDocument, canonical_bytes
 from agent_receipts.models import ActionReceipt, Identifier, Mandate, OutcomeAttestation
@@ -74,9 +81,7 @@ class SignedEnvelope(BaseModel):
 
     model_config = ENVELOPE
 
-    payload: Annotated[
-        ActionReceipt | OutcomeAttestation | Mandate, Field(discriminator="type")
-    ]
+    payload: Annotated[ActionReceipt | OutcomeAttestation | Mandate, Field(discriminator="type")]
     signatures: Annotated[tuple[Signature, ...], Field(min_length=1)]
 
     @model_validator(mode="after")
@@ -121,7 +126,9 @@ def _required_signer(payload: SignedDocument) -> str | None:
     return None
 
 
-def sign(document: SignedDocument, key_id: str, private_key: ed25519.Ed25519PrivateKey) -> SignedEnvelope:
+def sign(
+    document: SignedDocument, key_id: str, private_key: ed25519.Ed25519PrivateKey
+) -> SignedEnvelope:
     """Wrap a document in an envelope carrying one signature over its payload."""
     return SignedEnvelope(payload=document, signatures=(_signature(document, key_id, private_key),))
 
@@ -131,7 +138,9 @@ def add_signature(
 ) -> SignedEnvelope:
     """Countersign an existing envelope, leaving its payload untouched."""
     countersigned = _signature(envelope.payload, key_id, private_key)
-    return SignedEnvelope(payload=envelope.payload, signatures=(*envelope.signatures, countersigned))
+    return SignedEnvelope(
+        payload=envelope.payload, signatures=(*envelope.signatures, countersigned)
+    )
 
 
 def verified_signers(
@@ -159,5 +168,7 @@ def verified_signers(
     return frozenset(verified)
 
 
-def _signature(document: SignedDocument, key_id: str, private_key: ed25519.Ed25519PrivateKey) -> Signature:
+def _signature(
+    document: SignedDocument, key_id: str, private_key: ed25519.Ed25519PrivateKey
+) -> Signature:
     return Signature(key_id=key_id, value=_encode(private_key.sign(canonical_bytes(document))))

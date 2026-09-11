@@ -4,7 +4,6 @@ from datetime import timedelta
 from decimal import Decimal
 
 import pytest
-from support import MANDATE_VECTOR, RECEIPT_VECTOR, document
 
 from agent_receipts.models import ActionReceipt, Decision, DecisionOutcome, Mandate, Money
 from agent_receipts.scope import (
@@ -13,6 +12,7 @@ from agent_receipts.scope import (
     allowed_beyond_mandate,
     scope_violations,
 )
+from support import MANDATE_VECTOR, RECEIPT_VECTOR, document
 
 PARAMS_HASH = "sha256:" + "a" * 64
 

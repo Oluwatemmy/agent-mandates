@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import unicodedata
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 from enum import StrEnum
 from typing import Annotated, Literal
@@ -38,7 +38,7 @@ SIGNED_DOCUMENT = ConfigDict(extra="forbid", frozen=True)
 def _canonical_timestamp(moment: datetime) -> datetime:
     if moment.tzinfo is None:
         raise ValueError("timestamp must be timezone-aware")
-    utc = moment.astimezone(timezone.utc)
+    utc = moment.astimezone(UTC)
     # Truncated to milliseconds because datetime.isoformat() omits the
     # fractional part entirely when it is zero, giving one instant two written
     # forms. Sub-millisecond precision is not meaningful for these documents.
@@ -59,7 +59,11 @@ def _canonical_amount(amount: Decimal) -> Decimal:
     # normalize() renders integers carrying trailing zeros in scientific
     # notation (Decimal 100 becomes 1E+2), which is a second way to write the
     # same amount. Force the plain integer form instead.
-    if canonical.as_tuple().exponent > 0:
+    #
+    # Only NaN and Infinity carry a non-integer exponent, and both were rejected
+    # above, but the type does not say so.
+    exponent = canonical.as_tuple().exponent
+    if isinstance(exponent, int) and exponent > 0:
         canonical = canonical.quantize(Decimal(1))
     # Negative zero passes the sign check above and would serialize as "-0".
     if canonical.is_zero():

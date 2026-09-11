@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from decimal import Decimal
 
 import pytest
@@ -10,7 +10,6 @@ from agent_receipts.models import (
     Agent,
     Decision,
     DecisionOutcome,
-    Mandate,
     Money,
     OutcomeAttestation,
     OutcomeStatus,
@@ -24,7 +23,7 @@ PARAMS_HASH = "sha256:" + "a" * 64
 RECEIPT_HASH = "sha256:" + "b" * 64
 MANDATE_HASH = "sha256:" + "c" * 64
 MANDATE_ID = "mndt_" + "0" * 32
-ISSUED_AT = datetime(2026, 9, 9, 14, 3, 11, tzinfo=timezone.utc)
+ISSUED_AT = datetime(2026, 9, 9, 14, 3, 11, tzinfo=UTC)
 
 
 def build_receipt(**overrides) -> ActionReceipt:
@@ -82,10 +81,16 @@ def test_receipt_rejects_id_without_receipt_prefix():
 )
 def test_action_rejects_malformed_params_hash(params_hash):
     with pytest.raises(ValidationError):
-        Action(type="payment.charge", target="https://api.example.com/v1/orders", params_hash=params_hash)
+        Action(
+            type="payment.charge",
+            target="https://api.example.com/v1/orders",
+            params_hash=params_hash,
+        )
 
 
-@pytest.mark.parametrize("target", ["/v1/orders", "api.example.com/v1/orders", "ftp://example.com/f"])
+@pytest.mark.parametrize(
+    "target", ["/v1/orders", "api.example.com/v1/orders", "ftp://example.com/f"]
+)
 def test_action_rejects_target_that_is_not_an_absolute_http_url(target):
     with pytest.raises(ValidationError):
         Action(type="payment.charge", target=target, params_hash=PARAMS_HASH)

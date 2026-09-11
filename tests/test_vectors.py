@@ -14,9 +14,8 @@ from pathlib import Path
 
 import pytest
 
-from support import DOCUMENT_TYPES, VECTOR_PATHS
-
 from agent_receipts.canonical import canonical_json_value
+from support import DOCUMENT_TYPES, VECTOR_PATHS
 
 
 def load(path: Path) -> dict:

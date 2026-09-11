@@ -4,7 +4,7 @@ Two documents describing the same thing must serialize to the same bytes, no
 matter how the caller wrote the values. Everything here guards that.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from decimal import Decimal
 
 import pytest
@@ -33,7 +33,7 @@ MANDATE_HASH = "sha256:" + "c" * 64
 MANDATE_ID = "mndt_" + "0" * 32
 PRINCIPAL = Principal(id="user:1234", type=PrincipalType.HUMAN, key_id="principal-key")
 AGENT = Agent(id="agent:bot", key_id="key-1")
-EXPIRES_AT = datetime(2026, 9, 10, 14, 3, 11, tzinfo=timezone.utc)
+EXPIRES_AT = datetime(2026, 9, 10, 14, 3, 11, tzinfo=UTC)
 
 PRECOMPOSED_E_ACUTE = "café"
 DECOMPOSED_E_ACUTE = "café"
@@ -55,12 +55,14 @@ def test_differently_written_equivalent_documents_serialize_identically():
         id=outcome_id,
         receipt_id=receipt_id,
         receipt_hash=RECEIPT_HASH,
-        issued_at=datetime(2026, 9, 23, 9, 11, 2, 999_000, tzinfo=timezone.utc),
+        issued_at=datetime(2026, 9, 23, 9, 11, 2, 999_000, tzinfo=UTC),
         status=OutcomeStatus.DISPUTED,
         loss=Money(amount=Decimal("42.5"), currency="USD"),
     )
 
-    assert as_written_by_one_caller.model_dump(mode="json") == as_written_by_another.model_dump(mode="json")
+    assert as_written_by_one_caller.model_dump(mode="json") == as_written_by_another.model_dump(
+        mode="json"
+    )
 
 
 @pytest.mark.parametrize(
@@ -93,7 +95,7 @@ def test_timestamps_always_carry_three_fractional_digits_and_a_zulu_suffix():
         id=new_outcome_id(),
         receipt_id=new_receipt_id(),
         receipt_hash=RECEIPT_HASH,
-        issued_at=datetime(2026, 9, 23, 9, 11, 2, tzinfo=timezone.utc),
+        issued_at=datetime(2026, 9, 23, 9, 11, 2, tzinfo=UTC),
         status=OutcomeStatus.COMPLETED,
     )
 
@@ -107,15 +109,19 @@ def test_timestamps_truncate_below_millisecond_precision():
         principal=PRINCIPAL,
         agent=AGENT,
         scope=("payment.charge",),
-        expires_at=datetime(2026, 9, 10, 14, 3, 11, 999_999, tzinfo=timezone.utc),
+        expires_at=datetime(2026, 9, 10, 14, 3, 11, 999_999, tzinfo=UTC),
     )
 
     assert mandate.model_dump(mode="json")["expires_at"] == "2026-09-10T14:03:11.999Z"
 
 
 def test_equivalent_unicode_spellings_produce_the_same_identifier():
-    precomposed = Action(type=PRECOMPOSED_E_ACUTE, target="https://api.example.com/x", params_hash=PARAMS_HASH)
-    decomposed = Action(type=DECOMPOSED_E_ACUTE, target="https://api.example.com/x", params_hash=PARAMS_HASH)
+    precomposed = Action(
+        type=PRECOMPOSED_E_ACUTE, target="https://api.example.com/x", params_hash=PARAMS_HASH
+    )
+    decomposed = Action(
+        type=DECOMPOSED_E_ACUTE, target="https://api.example.com/x", params_hash=PARAMS_HASH
+    )
 
     assert precomposed.type == decomposed.type
 
@@ -129,7 +135,9 @@ def test_identifiers_reject_surrounding_whitespace(identifier):
 def test_identifier_case_is_preserved():
     # Folding case would merge principals that a caller's own system treats as
     # two different subjects.
-    action = Action(type="Payment.Charge", target="https://api.example.com/x", params_hash=PARAMS_HASH)
+    action = Action(
+        type="Payment.Charge", target="https://api.example.com/x", params_hash=PARAMS_HASH
+    )
 
     assert action.type == "Payment.Charge"
 
@@ -148,8 +156,22 @@ def test_mandate_scope_is_sorted_and_deduplicated():
 
 
 def test_mandate_scope_order_does_not_change_the_document():
-    written_one_way = Mandate(id=MANDATE_ID, issued_at=EXPIRES_AT, principal=PRINCIPAL, agent=AGENT, scope=("a.read", "b.write"), expires_at=EXPIRES_AT)
-    written_another = Mandate(id=MANDATE_ID, issued_at=EXPIRES_AT, principal=PRINCIPAL, agent=AGENT, scope=("b.write", "a.read"), expires_at=EXPIRES_AT)
+    written_one_way = Mandate(
+        id=MANDATE_ID,
+        issued_at=EXPIRES_AT,
+        principal=PRINCIPAL,
+        agent=AGENT,
+        scope=("a.read", "b.write"),
+        expires_at=EXPIRES_AT,
+    )
+    written_another = Mandate(
+        id=MANDATE_ID,
+        issued_at=EXPIRES_AT,
+        principal=PRINCIPAL,
+        agent=AGENT,
+        scope=("b.write", "a.read"),
+        expires_at=EXPIRES_AT,
+    )
 
     assert written_one_way.model_dump(mode="json") == written_another.model_dump(mode="json")
 
@@ -160,7 +182,9 @@ def test_mandate_rejects_an_empty_scope():
 
 
 def test_decision_reasons_keep_the_order_the_policy_produced():
-    decision = Decision(outcome=DecisionOutcome.DENY, reasons=("over mandate limit", "mandate expired"))
+    decision = Decision(
+        outcome=DecisionOutcome.DENY, reasons=("over mandate limit", "mandate expired")
+    )
 
     assert decision.reasons == ("over mandate limit", "mandate expired")
 

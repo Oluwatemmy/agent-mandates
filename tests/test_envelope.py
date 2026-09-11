@@ -15,10 +15,9 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric import ed25519
 from pydantic import ValidationError
 
-from support import MANDATE_VECTOR, PRIVATE_KEYS, PUBLIC_KEYS, VECTOR_PATHS, document
-
 from agent_receipts.canonical import canonical_bytes
 from agent_receipts.signing import SignedEnvelope, add_signature, sign, verified_signers
+from support import MANDATE_VECTOR, PRIVATE_KEYS, PUBLIC_KEYS, VECTOR_PATHS, document
 
 ATTACKER_KEY = ed25519.Ed25519PrivateKey.from_private_bytes(bytes([0xFF] * 32))
 
@@ -58,7 +57,10 @@ def test_signing_is_reproducible_from_the_seed(vector_path):
 
 def test_envelope_key_order_does_not_affect_verification():
     vector = receipt_vector()
-    reordered = {"signatures": vector["envelope"]["signatures"], "payload": vector["envelope"]["payload"]}
+    reordered = {
+        "signatures": vector["envelope"]["signatures"],
+        "payload": vector["envelope"]["payload"],
+    }
 
     envelope = SignedEnvelope.model_validate(reordered)
 
@@ -191,6 +193,10 @@ def test_rejects_unknown_envelope_fields():
         SignedEnvelope.model_validate({**vector["envelope"], "verified": True})
 
 
+def decode_signature(text: str) -> bytes:
+    return base64.urlsafe_b64decode(text + "=" * (-len(text) % 4))
+
+
 def test_rejects_a_non_canonical_base64_signature():
     # The final base64 character carries unused bits, so the same 64 signature
     # bytes have more than one spelling unless the encoding is pinned.
@@ -199,12 +205,14 @@ def test_rejects_a_non_canonical_base64_signature():
     alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
     altered = original[:-1] + alphabet[alphabet.index(original[-1]) ^ 1]
 
-    decode = lambda text: base64.urlsafe_b64decode(text + "=" * (-len(text) % 4))
-    assert decode(altered) == decode(original)
+    assert decode_signature(altered) == decode_signature(original)
 
     with pytest.raises(ValidationError, match="canonical unpadded base64url"):
         SignedEnvelope.model_validate(
-            {**vector["envelope"], "signatures": [{**vector["envelope"]["signatures"][0], "value": altered}]}
+            {
+                **vector["envelope"],
+                "signatures": [{**vector["envelope"]["signatures"][0], "value": altered}],
+            }
         )
 
 

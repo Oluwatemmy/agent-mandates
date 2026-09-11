@@ -419,3 +419,7 @@ broken is much less useful than knowing which hop broke it.
 Every document carries `v`. Any change to a field name, type, or canonical rule
 in this file is a new version. Documents signed under an earlier version remain
 verifiable under the rules of that version.
+
+The format version and the package version are different things. They happen to
+move together before 1.0, but a library release that fixes a bug without
+touching the wire format does not change `v`, and must not.

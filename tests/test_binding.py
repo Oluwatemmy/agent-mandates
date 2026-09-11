@@ -10,7 +10,6 @@ from datetime import timedelta
 from decimal import Decimal
 
 import pytest
-from support import MANDATE_VECTOR, OUTCOME_VECTOR, RECEIPT_VECTOR, document
 
 from agent_receipts.binding import (
     MANDATE_PROBLEM_DESCRIPTIONS,
@@ -29,16 +28,16 @@ from agent_receipts.models import (
     Decision,
     DecisionOutcome,
     DisputeResolution,
+    Mandate,
     Money,
     OutcomeAttestation,
     OutcomeStatus,
     Principal,
     PrincipalType,
-    Mandate,
     new_mandate_id,
     new_receipt_id,
 )
-
+from support import MANDATE_VECTOR, OUTCOME_VECTOR, RECEIPT_VECTOR, document
 
 
 @pytest.fixture
@@ -224,7 +223,9 @@ def test_an_entirely_different_mandate_fails_on_id_and_hash(mandate, receipt):
 
 
 def test_an_action_taken_before_the_grant_existed_is_reported(mandate, receipt):
-    granted_later = mandate.model_copy(update={"issued_at": receipt.issued_at + timedelta(seconds=1)})
+    granted_later = mandate.model_copy(
+        update={"issued_at": receipt.issued_at + timedelta(seconds=1)}
+    )
 
     assert MandateProblem.ACTION_PRECEDES_MANDATE in mandate_problems(granted_later, receipt)
 

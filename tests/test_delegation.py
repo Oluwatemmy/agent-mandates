@@ -8,7 +8,6 @@ from datetime import timedelta
 from decimal import Decimal
 
 import pytest
-from support import DELEGATED_VECTOR, MANDATE_VECTOR, document
 
 from agent_receipts.binding import mandate_digest
 from agent_receipts.delegation import (
@@ -21,13 +20,13 @@ from agent_receipts.delegation import (
 )
 from agent_receipts.models import (
     Agent,
-    DelegationLink,
     Mandate,
     Money,
     Principal,
     PrincipalType,
     new_mandate_id,
 )
+from support import DELEGATED_VECTOR, MANDATE_VECTOR, document
 
 
 @pytest.fixture
@@ -76,7 +75,9 @@ def test_scope_may_be_narrowed(root, delegated):
 
 
 def test_the_ceiling_cannot_be_raised(root, delegated):
-    richer = delegated.model_copy(update={"max_value": Money(amount=Decimal("500"), currency="USD")})
+    richer = delegated.model_copy(
+        update={"max_value": Money(amount=Decimal("500"), currency="USD")}
+    )
 
     assert delegation_problems(root, richer) == {DelegationProblem.CEILING_RAISED}
 
@@ -90,7 +91,9 @@ def test_the_ceiling_cannot_be_removed(root, delegated):
 
 
 def test_a_ceiling_in_another_currency_fails_closed(root, delegated):
-    elsewhere = delegated.model_copy(update={"max_value": Money(amount=Decimal("1"), currency="EUR")})
+    elsewhere = delegated.model_copy(
+        update={"max_value": Money(amount=Decimal("1"), currency="EUR")}
+    )
 
     assert delegation_problems(root, elsewhere) == {DelegationProblem.CEILING_CURRENCY_CHANGED}
 
@@ -200,7 +203,9 @@ def test_a_sound_chain_reports_no_problems_at_any_position(root, delegated):
 
 
 def test_chain_problems_say_which_hop_broke(root, delegated):
-    richer = delegated.model_copy(update={"max_value": Money(amount=Decimal("500"), currency="USD")})
+    richer = delegated.model_copy(
+        update={"max_value": Money(amount=Decimal("500"), currency="USD")}
+    )
 
     positions = chain_problems([root, richer])
 
@@ -222,7 +227,9 @@ def test_a_chain_longer_than_the_limit_is_rejected(root, delegated):
     # A verifier walks a chain link by link, so an unbounded one is free work
     # for an attacker to hand it.
     long_chain = [root] + [
-        delegated.model_copy(update={"id": new_mandate_id(), "agent": Agent(id=f"agent:{i}", key_id=f"key-{i}")})
+        delegated.model_copy(
+            update={"id": new_mandate_id(), "agent": Agent(id=f"agent:{i}", key_id=f"key-{i}")}
+        )
         for i in range(MAX_CHAIN_DEPTH)
     ]
 
@@ -231,7 +238,9 @@ def test_a_chain_longer_than_the_limit_is_rejected(root, delegated):
 
 def test_a_chain_at_the_limit_is_allowed(root, delegated):
     at_limit = [root] + [
-        delegated.model_copy(update={"id": new_mandate_id(), "agent": Agent(id=f"agent:{i}", key_id=f"key-{i}")})
+        delegated.model_copy(
+            update={"id": new_mandate_id(), "agent": Agent(id=f"agent:{i}", key_id=f"key-{i}")}
+        )
         for i in range(MAX_CHAIN_DEPTH - 1)
     ]
 

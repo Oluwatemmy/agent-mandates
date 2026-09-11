@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "agent-receipts"
-version = "0.1.0"
+version = "0.2.0"
 description = "Signed, independently verifiable records of what an AI agent did and what happened as a result."
 requires-python = ">=3.11"
 license = "Apache-2.0"
@@ -13,13 +13,35 @@ authors = [{name = "Ajayi Oluwaseyi Temitope"}]
 dependencies = ["pydantic>=2.9", "cryptography>=42.0"]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0", "rfc8785>=0.1"]
+dev = ["pytest>=8.0", "rfc8785>=0.1", "hypothesis>=6.100", "mypy>=1.11", "ruff>=0.6"]
 
 [project.scripts]
 receipts = "agent_receipts.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/agent_receipts"]
+# Ships py.typed so the annotations are visible to consumers type checkers.
+artifacts = ["src/agent_receipts/py.typed"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unreachable = true
+# Only our own code is in scope. Third-party stubs are checked against their own
+# minimum version, not ours, and failing on those hides real findings.
+follow_imports = "silent"
+
+[[tool.mypy.overrides]]
+module = ["rfc8785.*", "numpy.*"]
+ignore_missing_imports = true
+follow_imports = "skip"
