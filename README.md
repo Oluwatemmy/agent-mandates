@@ -3,12 +3,17 @@
 Signed, independently verifiable records of what an AI agent did and what
 happened as a result.
 
-Two linked documents:
+Three linked documents:
 
-- **Action receipt** — signed when an agent acts. Who acted, on whose
-  authority, under what mandate, what they did, and whether it was allowed.
-- **Outcome attestation** — signed later and bound to that receipt. What
-  actually happened: completed, disputed, refunded, reversed, and any loss.
+- **Mandate** — signed by a principal, granting one named agent a scope, a
+  ceiling and an expiry.
+- **Action receipt** — signed by the agent when it acts, bound by hash to the
+  mandate it acted under.
+- **Outcome attestation** — signed later and bound by hash to that receipt.
+  What actually happened: completed, disputed, refunded, reversed, and any loss.
+
+Each is signed by the party making the claim, so a verifier checks a grant
+against whoever granted it rather than whoever used it.
 
 Verification requires only the issuer's public key. It never requires access to
 the issuer's systems.
@@ -43,9 +48,9 @@ three cases can be told apart in a script.
 
 Use `--require KEY_ID` (repeatable) to fail unless a particular key signed.
 
-To check that an outcome really reports on a given receipt, pass both:
+To check a whole chain, pass the documents it rests on:
 
-    receipts verify outcome.json --keys jwks.json --receipt receipt.json
+    receipts verify outcome.json --keys jwks.json         --receipt receipt.json --mandate mandate.json
 
 Verification needs only the public key directory, never access to the issuer.
 

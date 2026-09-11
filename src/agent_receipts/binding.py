@@ -1,23 +1,23 @@
-"""Binding an outcome attestation to the receipt it reports on.
+"""Binding documents to the documents they refer to.
 
-Two documents that each verify on their own still say nothing as a pair. An
-outcome names a receipt id, but ids are chosen by whoever issues them, so the
-reference alone proves nothing about which receipt is meant. Binding closes
-that gap.
+Two documents that each verify on their own still say nothing as a pair. A
+reference by id proves only that somebody typed that string, because ids are
+chosen by whoever issues them. Binding closes that: the referring document
+commits to the referenced document's canonical bytes.
 
-There are two distinct kinds of check here, and conflating them would be a
-mistake:
+There are two pairings:
 
-- **Cryptographic binding** is the receipt hash. Either the outcome commits to
-  exactly these receipt bytes or it does not, and no judgement is involved.
-- **Coherence** is whether the pair describes something that could have
-  happened. An outcome dated before its own action, or reporting a transaction
-  for an action that was refused, is incoherent however well it verifies.
+- a **receipt** to the **mandate** it was taken under, which is what makes the
+  agent's claimed authority checkable against the principal who granted it
+- an **outcome** to the **receipt** it reports on, which is what turns two
+  signed documents into a record of a transaction's full lifecycle
 
-Both are reported together because a caller needs to act on either, but the
-distinction matters when reading a failure: a hash mismatch means you are
-holding the wrong receipt, while an incoherent pair means the documents are
-wrong about each other.
+In both, two kinds of check are reported together, and the distinction matters
+when reading a failure. **Cryptographic** checks involve no judgement: the
+commitment either holds or it does not, and a mismatch means you are holding the
+wrong document. **Coherence** checks ask whether the pair describes something
+that could have happened; a failure there means the documents are wrong about
+each other.
 """
 
 from __future__ import annotations
@@ -31,11 +31,20 @@ from agent_receipts.models import (
     ActionReceipt,
     DecisionOutcome,
     DisputeResolution,
+    Mandate,
     Money,
     OutcomeAttestation,
     OutcomeStatus,
     new_outcome_id,
 )
+
+
+class MandateProblem(StrEnum):
+    MANDATE_ID_MISMATCH = "mandate_id_mismatch"
+    MANDATE_HASH_MISMATCH = "mandate_hash_mismatch"
+    GRANTED_TO_ANOTHER_AGENT = "granted_to_another_agent"
+    GRANTED_BY_ANOTHER_PRINCIPAL = "granted_by_another_principal"
+    ACTION_PRECEDES_MANDATE = "action_precedes_mandate"
 
 
 class BindingProblem(StrEnum):
@@ -45,6 +54,14 @@ class BindingProblem(StrEnum):
     ACTION_WAS_REFUSED = "action_was_refused"
 
 
+MANDATE_PROBLEM_DESCRIPTIONS = {
+    MandateProblem.MANDATE_ID_MISMATCH: "the receipt names a different mandate",
+    MandateProblem.MANDATE_HASH_MISMATCH: "the receipt commits to different mandate content",
+    MandateProblem.GRANTED_TO_ANOTHER_AGENT: "the mandate was granted to a different agent",
+    MandateProblem.GRANTED_BY_ANOTHER_PRINCIPAL: "the mandate was granted by a different principal",
+    MandateProblem.ACTION_PRECEDES_MANDATE: "the action was taken before the mandate was granted",
+}
+
 PROBLEM_DESCRIPTIONS = {
     BindingProblem.RECEIPT_ID_MISMATCH: "the outcome names a different receipt",
     BindingProblem.RECEIPT_HASH_MISMATCH: "the outcome commits to different receipt content",
@@ -53,9 +70,34 @@ PROBLEM_DESCRIPTIONS = {
 }
 
 
+def mandate_digest(mandate: Mandate) -> str:
+    """The value a receipt commits to when it binds to this mandate."""
+    return "sha256:" + hashlib.sha256(canonical_bytes(mandate)).hexdigest()
+
+
 def receipt_digest(receipt: ActionReceipt) -> str:
     """The value an outcome commits to when it binds to this receipt."""
     return "sha256:" + hashlib.sha256(canonical_bytes(receipt)).hexdigest()
+
+
+def mandate_problems(mandate: Mandate, receipt: ActionReceipt) -> frozenset[MandateProblem]:
+    """Everything wrong with this grant and the action claiming it."""
+    problems = set()
+
+    if receipt.mandate_id != mandate.id:
+        problems.add(MandateProblem.MANDATE_ID_MISMATCH)
+    if receipt.mandate_hash != mandate_digest(mandate):
+        problems.add(MandateProblem.MANDATE_HASH_MISMATCH)
+    # Compared whole rather than by id, so that a grant cannot be claimed by an
+    # agent sharing an id but presenting a different signing key.
+    if receipt.agent != mandate.agent:
+        problems.add(MandateProblem.GRANTED_TO_ANOTHER_AGENT)
+    if receipt.principal != mandate.principal:
+        problems.add(MandateProblem.GRANTED_BY_ANOTHER_PRINCIPAL)
+    if receipt.issued_at < mandate.issued_at:
+        problems.add(MandateProblem.ACTION_PRECEDES_MANDATE)
+
+    return frozenset(problems)
 
 
 def binding_problems(

@@ -17,9 +17,14 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
-from agent_receipts.binding import PROBLEM_DESCRIPTIONS, binding_problems
+from agent_receipts.binding import (
+    MANDATE_PROBLEM_DESCRIPTIONS,
+    PROBLEM_DESCRIPTIONS,
+    binding_problems,
+    mandate_problems,
+)
 from agent_receipts.keys import read_key_directory
-from agent_receipts.models import ActionReceipt, OutcomeAttestation
+from agent_receipts.models import ActionReceipt, Mandate, OutcomeAttestation
 from agent_receipts.scope import VIOLATION_DESCRIPTIONS, allowed_beyond_mandate, scope_violations
 from agent_receipts.signing import SignedEnvelope, verified_signers
 
@@ -59,6 +64,12 @@ def main(argv: list[str] | None = None) -> int:
         help="the receipt an outcome reports on, to check the two are bound",
     )
     verify.add_argument(
+        "--mandate",
+        type=Path,
+        metavar="ENVELOPE",
+        help="the grant a receipt was taken under, to check its authority",
+    )
+    verify.add_argument(
         "--require",
         action="append",
         default=[],
@@ -81,6 +92,13 @@ def _verify(arguments: argparse.Namespace) -> int:
 
     envelope = _read_envelope(arguments.envelope)
     receipt = _read_receipt(arguments.receipt, envelope) if arguments.receipt else None
+    mandate = _read_mandate(arguments.mandate) if arguments.mandate else None
+
+    action = envelope.payload if isinstance(envelope.payload, ActionReceipt) else None
+    if action is None and receipt is not None:
+        action = receipt.payload
+    if mandate is not None and action is None:
+        raise InputError("--mandate applies when an action receipt is being verified")
 
     signers = verified_signers(envelope, public_keys)
     for label, value in _describe(envelope.payload):
@@ -98,11 +116,13 @@ def _verify(arguments: argparse.Namespace) -> int:
     if receipt is not None:
         failures.extend(_report_binding(receipt, envelope.payload, public_keys))
 
-    checked = envelope.payload if isinstance(envelope.payload, ActionReceipt) else None
-    if checked is None and receipt is not None:
-        checked = receipt.payload
-    if checked is not None:
-        failures.extend(_report_scope(checked))
+    if action is not None:
+        if mandate is None:
+            # Authority cannot be checked without the grant, and saying nothing
+            # would let a bare signature check read as an authority check.
+            _line("scope", "not checked (no mandate supplied)")
+        else:
+            failures.extend(_report_authority(mandate, action, public_keys))
 
     if failures:
         _line("result", f"NOT VERIFIED ({'; '.join(failures)})")
@@ -134,13 +154,37 @@ def _report_binding(
     return failures
 
 
-def _report_scope(receipt: ActionReceipt) -> list[str]:
-    violations = scope_violations(receipt)
+def _report_authority(
+    mandate: SignedEnvelope, receipt: ActionReceipt, public_keys: dict
+) -> list[str]:
+    failures = []
+    grant = mandate.payload
+
+    granted_by = verified_signers(mandate, public_keys)
+    _line("mandate", f"{grant.id} granted by {', '.join(sorted(granted_by)) or '-'}")
+    if not granted_by:
+        failures.append("the mandate itself does not verify")
+
+    problems = mandate_problems(grant, receipt)
+    if problems:
+        _line("grant", "NOT THIS RECEIPT'S")
+        for problem in sorted(problems):
+            _line("", f"- {MANDATE_PROBLEM_DESCRIPTIONS[problem]}")
+        failures.append("the receipt was not taken under this mandate")
+        # Measuring the action against a grant it was not taken under would
+        # produce a confident answer to the wrong question.
+        return failures
+
+    return failures + _report_scope(grant, receipt)
+
+
+def _report_scope(mandate: Mandate, receipt: ActionReceipt) -> list[str]:
+    violations = scope_violations(mandate, receipt)
     if not violations:
         _line("scope", "OK")
         return []
 
-    went_ahead = allowed_beyond_mandate(receipt)
+    went_ahead = allowed_beyond_mandate(mandate, receipt)
     _line("scope", "EXCEEDED" if went_ahead else "EXCEEDED, and refused")
     for violation in sorted(violations):
         _line("", f"- {VIOLATION_DESCRIPTIONS[violation]}")
@@ -159,6 +203,13 @@ def _read_envelope(path: Path) -> SignedEnvelope:
         raise InputError(f"{path} is not a valid envelope\n{error}") from error
 
 
+def _read_mandate(path: Path) -> SignedEnvelope:
+    mandate = _read_envelope(path)
+    if not isinstance(mandate.payload, Mandate):
+        raise InputError(f"{path} does not contain a mandate")
+    return mandate
+
+
 def _read_receipt(path: Path, envelope: SignedEnvelope) -> SignedEnvelope:
     if not isinstance(envelope.payload, OutcomeAttestation):
         raise InputError("--receipt applies when verifying an outcome attestation")
@@ -169,7 +220,20 @@ def _read_receipt(path: Path, envelope: SignedEnvelope) -> SignedEnvelope:
     return receipt
 
 
-def _describe(payload: ActionReceipt | OutcomeAttestation) -> list[tuple[str, str]]:
+def _describe(payload: ActionReceipt | OutcomeAttestation | Mandate) -> list[tuple[str, str]]:
+    if isinstance(payload, Mandate):
+        described = [
+            ("document", f"{payload.id} (mandate)"),
+            ("granted", _timestamp(payload.issued_at)),
+            ("principal", f"{payload.principal.id} ({payload.principal.type})"),
+            ("to agent", f"{payload.agent.id} using {payload.agent.key_id}"),
+            ("scope", ", ".join(payload.scope)),
+            ("expires", _timestamp(payload.expires_at)),
+        ]
+        if payload.max_value is not None:
+            described.append(("ceiling", _money(payload.max_value)))
+        return described
+
     if isinstance(payload, ActionReceipt):
         described = [
             ("document", f"{payload.id} (action receipt)"),
@@ -180,7 +244,7 @@ def _describe(payload: ActionReceipt | OutcomeAttestation) -> list[tuple[str, st
         ]
         if payload.action.value is not None:
             described.append(("value", _money(payload.action.value)))
-        described.append(("mandate", f"{payload.mandate.id} [{', '.join(payload.mandate.scope)}]"))
+        described.append(("under", payload.mandate_id))
         described.append(("decision", payload.decision.outcome))
         return described
 

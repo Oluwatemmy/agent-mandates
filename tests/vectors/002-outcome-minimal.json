@@ -1,30 +1,30 @@
 {
-  "description": "Minimal outcome attestation. Absent optional fields are omitted, never written as null, bound to vector 001.",
+  "description": "Minimal outcome attestation. Absent optional fields are omitted, never written as null. Bound to vector 001.",
   "document_type": "outcome",
   "input": {
     "id": "outc_fedcba9876543210fedcba9876543210",
     "receipt_id": "rcpt_0123456789abcdef0123456789abcdef",
+    "receipt_hash": "sha256:289f4dc760da2e07a9f5d57f95dffdaacb152213982a72aecb9158455acd6162",
     "issued_at": "2026-09-23T09:11:02Z",
-    "status": "completed",
-    "receipt_hash": "sha256:61de2e02bbae51b33a15e59c76d0233b2d4956b1d6babafbcb79da00bdab2114"
+    "status": "completed"
   },
   "canonical": {
-    "v": "0.1",
+    "v": "0.2",
     "type": "outcome",
     "id": "outc_fedcba9876543210fedcba9876543210",
     "receipt_id": "rcpt_0123456789abcdef0123456789abcdef",
+    "receipt_hash": "sha256:289f4dc760da2e07a9f5d57f95dffdaacb152213982a72aecb9158455acd6162",
     "issued_at": "2026-09-23T09:11:02.000Z",
-    "status": "completed",
-    "receipt_hash": "sha256:61de2e02bbae51b33a15e59c76d0233b2d4956b1d6babafbcb79da00bdab2114"
+    "status": "completed"
   },
-  "canonical_bytes_sha256": "3d10b8df6e4f80283ff92b3ec8fbfb345b9d363ebba1589e1f25d2385cb9f942",
+  "canonical_bytes_sha256": "7723cc7a57b92a8ffc43c719c7fbee5482833ab0b0a85e4988de0a980a2b8d67",
   "envelope": {
     "payload": {
-      "v": "0.1",
+      "v": "0.2",
       "type": "outcome",
       "id": "outc_fedcba9876543210fedcba9876543210",
       "receipt_id": "rcpt_0123456789abcdef0123456789abcdef",
-      "receipt_hash": "sha256:61de2e02bbae51b33a15e59c76d0233b2d4956b1d6babafbcb79da00bdab2114",
+      "receipt_hash": "sha256:289f4dc760da2e07a9f5d57f95dffdaacb152213982a72aecb9158455acd6162",
       "issued_at": "2026-09-23T09:11:02.000Z",
       "status": "completed",
       "resolution": null,
@@ -34,7 +34,7 @@
       {
         "alg": "Ed25519",
         "key_id": "merchant-key",
-        "value": "hOxGbQMEUv91y9Qsq-CyD0ABO7SUh0Frrkqd9p_pdP8I9vih3rxJeUrhwPl1SioxTRyPAlU3ZOnt6uofMvoYAA"
+        "value": "NWIrl6jGudgMNR8GYjl6aKbw_C4SVffzHO3C9-wdVBucdCotCptiDUMkBDona2-ULmkKnIwNaQKvVJrsss7CAg"
       }
     ]
   }

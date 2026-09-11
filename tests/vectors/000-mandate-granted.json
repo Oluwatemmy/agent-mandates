@@ -1,0 +1,85 @@
+{
+  "description": "Authority granted by a principal to one agent, written non-canonically: offset timestamp, unsorted duplicated scope, trailing-zero ceiling, decomposed Unicode identifier.",
+  "document_type": "mandate",
+  "input": {
+    "id": "mndt_aaaa1111bbbb2222cccc3333dddd4444",
+    "issued_at": "2026-09-09T10:00:00+02:00",
+    "principal": {
+      "id": "user:1234",
+      "type": "human",
+      "key_id": "principal-key"
+    },
+    "agent": {
+      "id": "agent:cafe\u0301-bot",
+      "key_id": "key-1"
+    },
+    "scope": [
+      "payment.charge",
+      "order.create",
+      "payment.charge"
+    ],
+    "expires_at": "2026-09-10T14:03:11Z",
+    "max_value": {
+      "amount": "100.00",
+      "currency": "USD"
+    }
+  },
+  "canonical": {
+    "v": "0.2",
+    "type": "mandate",
+    "id": "mndt_aaaa1111bbbb2222cccc3333dddd4444",
+    "issued_at": "2026-09-09T08:00:00.000Z",
+    "principal": {
+      "id": "user:1234",
+      "type": "human",
+      "key_id": "principal-key"
+    },
+    "agent": {
+      "id": "agent:caf\u00e9-bot",
+      "key_id": "key-1"
+    },
+    "scope": [
+      "order.create",
+      "payment.charge"
+    ],
+    "expires_at": "2026-09-10T14:03:11.000Z",
+    "max_value": {
+      "amount": "100",
+      "currency": "USD"
+    }
+  },
+  "canonical_bytes_sha256": "235afb121f14e82dde427d7ea9b796f8ac1c75a8bc0ac9435b1420841eff0412",
+  "envelope": {
+    "payload": {
+      "v": "0.2",
+      "type": "mandate",
+      "id": "mndt_aaaa1111bbbb2222cccc3333dddd4444",
+      "issued_at": "2026-09-09T08:00:00.000Z",
+      "principal": {
+        "id": "user:1234",
+        "type": "human",
+        "key_id": "principal-key"
+      },
+      "agent": {
+        "id": "agent:caf\u00e9-bot",
+        "key_id": "key-1"
+      },
+      "scope": [
+        "order.create",
+        "payment.charge"
+      ],
+      "expires_at": "2026-09-10T14:03:11.000Z",
+      "max_value": {
+        "amount": "100",
+        "currency": "USD"
+      }
+    },
+    "signatures": [
+      {
+        "alg": "Ed25519",
+        "key_id": "principal-key",
+        "value": "iAOk27TO0D_YLAb6i5d1IAJjmNKL6gk4T-_rClbKPXLBTzKBCMwi5JgRXTYt7jwfbjpDx0O27I_FMhGxChjoAA"
+      }
+    ]
+  }
+}

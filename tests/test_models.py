@@ -22,6 +22,8 @@ from agent_receipts.models import (
 
 PARAMS_HASH = "sha256:" + "a" * 64
 RECEIPT_HASH = "sha256:" + "b" * 64
+MANDATE_HASH = "sha256:" + "c" * 64
+MANDATE_ID = "mndt_" + "0" * 32
 ISSUED_AT = datetime(2026, 9, 9, 14, 3, 11, tzinfo=timezone.utc)
 
 
@@ -30,13 +32,9 @@ def build_receipt(**overrides) -> ActionReceipt:
         "id": new_receipt_id(),
         "issued_at": ISSUED_AT,
         "agent": Agent(id="agent:checkout-bot", key_id="key-1"),
-        "principal": Principal(id="user:1234", type=PrincipalType.HUMAN),
-        "mandate": Mandate(
-            id="mandate:abc",
-            scope=("payment.charge",),
-            expires_at=ISSUED_AT + timedelta(days=1),
-            max_value=Money(amount=Decimal("100.00"), currency="USD"),
-        ),
+        "principal": Principal(id="user:1234", type=PrincipalType.HUMAN, key_id="principal-key"),
+        "mandate_id": MANDATE_ID,
+        "mandate_hash": MANDATE_HASH,
         "action": Action(
             type="payment.charge",
             target="https://api.example.com/v1/orders",

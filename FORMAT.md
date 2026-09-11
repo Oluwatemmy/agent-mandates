@@ -194,7 +194,9 @@ signature and only `crv` and `x` decide what the key is. Both are validated
 strictly, including that `x` decodes as base64url with no invalid characters
 discarded and yields exactly 32 bytes.
 
-## Binding an outcome to its receipt
+## Binding documents together
+
+### An outcome to its receipt
 
 An outcome attestation carries both `receipt_id` and `receipt_hash`. The id says
 which receipt is meant; the hash says which receipt it actually is.
@@ -208,7 +210,7 @@ wrong document.
 A reference alone would prove nothing: receipt ids are chosen by whoever issues
 them, so an outcome naming `rcpt_...` says only that somebody typed that string.
 
-### Checking a pair
+#### Checking that pair
 
 Checking reports every problem found, not the first. Two kinds are reported
 together, and the distinction matters when reading a failure:
@@ -239,6 +241,56 @@ Note what is deliberately **not** constrained: an outcome's loss may exceed the
 action's value, and may be in a different currency. Chargeback fees and foreign
 exchange both make those legitimate, and a format that rejected them would be
 wrong about the world rather than strict.
+
+
+### A receipt to its mandate
+
+A receipt carries `mandate_id` and `mandate_hash` rather than restating the
+grant. The hash covers the mandate's canonical bytes, so a grant cannot be
+quietly widened after the fact and still satisfy a receipt taken under the
+narrower one.
+
+| Problem | Meaning |
+|---|---|
+| `mandate_id_mismatch` | the receipt names a different mandate |
+| `mandate_hash_mismatch` | the receipt commits to different mandate content |
+| `granted_to_another_agent` | the mandate was granted to a different agent |
+| `granted_by_another_principal` | the mandate was granted by a different principal |
+| `action_precedes_mandate` | the action was taken before the mandate was granted |
+
+Agent and principal are compared **whole**, not by id. A different signing key
+makes a different agent, so a grant cannot be claimed by something sharing an
+id but presenting another key.
+
+An action taken at the instant a mandate is granted is in time; only one
+strictly earlier is a problem.
+
+## Authority
+
+A mandate is a document in its own right, signed by the **principal** who grants
+it, naming the single agent it is granted to.
+
+This is the whole reason it is not embedded in the receipt. A receipt is signed
+by its agent, so a mandate carried inside one would be an agent's own statement
+of what it was permitted to do -- an assertion that proves nothing, because a
+dishonest agent would simply write itself a permissive one. Separating the
+documents means a verifier checks a grant against whoever **granted** it rather
+than whoever **used** it.
+
+The envelope enforces this structurally: a mandate must carry a signature from
+the `key_id` of the principal it names, so an agent signing its own grant cannot
+be represented at all.
+
+An outcome attestation has no required signer, because it is issued by whichever
+party observed the result -- which the document does not name. The verifier
+decides whose attestation it trusts.
+
+### Checking authority is two questions
+
+Confirming the grant is the one the receipt was taken under, and measuring the
+action against it, are separate. A tool that skips the first and reports the
+second gives a confident answer to a question nobody asked: whether the action
+would have been permitted under some *other* mandate.
 
 ## Checking an action against its mandate
 

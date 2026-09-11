@@ -14,13 +14,9 @@ from pathlib import Path
 
 import pytest
 
+from support import DOCUMENT_TYPES, VECTOR_PATHS
+
 from agent_receipts.canonical import canonical_json_value
-from agent_receipts.models import ActionReceipt, OutcomeAttestation
-
-VECTOR_DIR = Path(__file__).parent / "vectors"
-DOCUMENT_TYPES = {"action": ActionReceipt, "outcome": OutcomeAttestation}
-
-VECTOR_PATHS = sorted(VECTOR_DIR.glob("[0-9]*.json"))
 
 
 def load(path: Path) -> dict:

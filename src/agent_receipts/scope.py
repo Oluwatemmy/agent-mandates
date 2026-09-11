@@ -5,20 +5,18 @@ done it under. These checks ask whether the first actually falls inside the
 second: the right kind of action, within any value ceiling, before the mandate
 ran out.
 
-What this does not do, and cannot: verify that the record is true. A receipt is
-signed by its agent, and the mandate travels inside that receipt, so an agent
-signs its own statement of what it was permitted to do. These checks catch
-over-reach and mistakes in honest records. They do not catch a dishonest signer,
-who could simply write a mandate that permits whatever it did. Closing that
-requires the mandate to be attested by the principal granting it, independently
-of the agent using it.
+The mandate is a separate document signed by the principal who granted it, so
+these checks measure an agent's action against authority it did not write for
+itself. Confirming that this grant is the one the receipt was taken under is a
+different question, answered by mandate_problems in binding.py; these checks
+assume the pair has already been matched.
 """
 
 from __future__ import annotations
 
 from enum import StrEnum
 
-from agent_receipts.models import ActionReceipt, DecisionOutcome
+from agent_receipts.models import ActionReceipt, DecisionOutcome, Mandate
 
 
 class ScopeViolation(StrEnum):
@@ -38,14 +36,14 @@ VIOLATION_DESCRIPTIONS = {
 }
 
 
-def scope_violations(receipt: ActionReceipt) -> frozenset[ScopeViolation]:
-    """Every way this action falls outside its mandate, or an empty set.
+def scope_violations(mandate: Mandate, receipt: ActionReceipt) -> frozenset[ScopeViolation]:
+    """Every way this action falls outside the mandate, or an empty set.
 
     Reports all violations rather than the first, for the same reason binding
     does: whoever has to act on the report needs to see the whole picture.
     """
     violations = set()
-    mandate, action = receipt.mandate, receipt.action
+    action = receipt.action
 
     if action.type not in mandate.scope:
         violations.add(ScopeViolation.ACTION_OUTSIDE_SCOPE)
@@ -69,11 +67,14 @@ def scope_violations(receipt: ActionReceipt) -> frozenset[ScopeViolation]:
     return frozenset(violations)
 
 
-def allowed_beyond_mandate(receipt: ActionReceipt) -> bool:
+def allowed_beyond_mandate(mandate: Mandate, receipt: ActionReceipt) -> bool:
     """Whether this receipt records permitting something the mandate did not.
 
     A refused action that fell outside its mandate is not a problem: it is the
     system working, and the receipt documenting it is a perfectly good record.
     What matters is a receipt that records going ahead anyway.
     """
-    return bool(scope_violations(receipt)) and receipt.decision.outcome is not DecisionOutcome.DENY
+    return (
+        bool(scope_violations(mandate, receipt))
+        and receipt.decision.outcome is not DecisionOutcome.DENY
+    )

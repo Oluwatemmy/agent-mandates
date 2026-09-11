@@ -29,6 +29,10 @@ from agent_receipts.models import (
 
 PARAMS_HASH = "sha256:" + "a" * 64
 RECEIPT_HASH = "sha256:" + "b" * 64
+MANDATE_HASH = "sha256:" + "c" * 64
+MANDATE_ID = "mndt_" + "0" * 32
+PRINCIPAL = Principal(id="user:1234", type=PrincipalType.HUMAN, key_id="principal-key")
+AGENT = Agent(id="agent:bot", key_id="key-1")
 EXPIRES_AT = datetime(2026, 9, 10, 14, 3, 11, tzinfo=timezone.utc)
 
 PRECOMPOSED_E_ACUTE = "café"
@@ -98,7 +102,10 @@ def test_timestamps_always_carry_three_fractional_digits_and_a_zulu_suffix():
 
 def test_timestamps_truncate_below_millisecond_precision():
     mandate = Mandate(
-        id="mandate:abc",
+        id=MANDATE_ID,
+        issued_at=EXPIRES_AT,
+        principal=PRINCIPAL,
+        agent=AGENT,
         scope=("payment.charge",),
         expires_at=datetime(2026, 9, 10, 14, 3, 11, 999_999, tzinfo=timezone.utc),
     )
@@ -129,7 +136,10 @@ def test_identifier_case_is_preserved():
 
 def test_mandate_scope_is_sorted_and_deduplicated():
     mandate = Mandate(
-        id="mandate:abc",
+        id=MANDATE_ID,
+        issued_at=EXPIRES_AT,
+        principal=PRINCIPAL,
+        agent=AGENT,
         scope=("order.create", "payment.charge", "order.create"),
         expires_at=EXPIRES_AT,
     )
@@ -138,8 +148,8 @@ def test_mandate_scope_is_sorted_and_deduplicated():
 
 
 def test_mandate_scope_order_does_not_change_the_document():
-    written_one_way = Mandate(id="m", scope=("a.read", "b.write"), expires_at=EXPIRES_AT)
-    written_another = Mandate(id="m", scope=("b.write", "a.read"), expires_at=EXPIRES_AT)
+    written_one_way = Mandate(id=MANDATE_ID, issued_at=EXPIRES_AT, principal=PRINCIPAL, agent=AGENT, scope=("a.read", "b.write"), expires_at=EXPIRES_AT)
+    written_another = Mandate(id=MANDATE_ID, issued_at=EXPIRES_AT, principal=PRINCIPAL, agent=AGENT, scope=("b.write", "a.read"), expires_at=EXPIRES_AT)
 
     assert written_one_way.model_dump(mode="json") == written_another.model_dump(mode="json")
 
@@ -174,13 +184,9 @@ def test_canonical_form_contains_no_json_numbers():
         id=new_receipt_id(),
         issued_at=EXPIRES_AT,
         agent=Agent(id="agent:bot", key_id="key-1"),
-        principal=Principal(id="user:1234", type=PrincipalType.HUMAN),
-        mandate=Mandate(
-            id="mandate:abc",
-            scope=("payment.charge",),
-            expires_at=EXPIRES_AT,
-            max_value=Money(amount=Decimal("100.00"), currency="USD"),
-        ),
+        principal=Principal(id="user:1234", type=PrincipalType.HUMAN, key_id="principal-key"),
+        mandate_id=MANDATE_ID,
+        mandate_hash=MANDATE_HASH,
         action=Action(
             type="payment.charge",
             target="https://api.example.com/v1/orders",

@@ -14,12 +14,9 @@ from pathlib import Path
 import pytest
 import rfc8785
 
-from agent_receipts.canonical import canonical_bytes, canonical_json_bytes
-from agent_receipts.models import ActionReceipt, OutcomeAttestation
+from support import DOCUMENT_TYPES, VECTOR_PATHS
 
-VECTOR_DIR = Path(__file__).parent / "vectors"
-DOCUMENT_TYPES = {"action": ActionReceipt, "outcome": OutcomeAttestation}
-VECTOR_PATHS = sorted(VECTOR_DIR.glob("[0-9]*.json"))
+from agent_receipts.canonical import canonical_bytes, canonical_json_bytes
 
 BACKSLASH = chr(0x5C)
 QUOTE = chr(0x22)

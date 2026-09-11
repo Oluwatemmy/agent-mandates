@@ -121,6 +121,7 @@ Sha256Digest = Annotated[str, StringConstraints(pattern=r"^sha256:[0-9a-f]{64}$"
 CurrencyCode = Annotated[str, StringConstraints(pattern=r"^[A-Z]{3}$")]
 ReceiptId = Annotated[str, StringConstraints(pattern=r"^rcpt_[0-9a-f]{32}$")]
 OutcomeId = Annotated[str, StringConstraints(pattern=r"^outc_[0-9a-f]{32}$")]
+MandateId = Annotated[str, StringConstraints(pattern=r"^mndt_[0-9a-f]{32}$")]
 Identifier = Annotated[
     str,
     StringConstraints(min_length=1, max_length=512),
@@ -182,14 +183,30 @@ class Principal(BaseModel):
 
     id: Identifier
     type: PrincipalType
+    # A principal grants authority by signing a mandate, so it needs a key of
+    # its own. Without one there is nobody a verifier can check a grant against.
+    key_id: Identifier
 
 
 class Mandate(BaseModel):
-    """The authority granted to the agent, and the limits on it."""
+    """Authority granted by a principal to a particular agent.
+
+    A signed document in its own right, issued by the principal rather than
+    embedded in the receipts that rely on it. An agent signing its own
+    statement of what it was permitted to do proves nothing; a verifier has to
+    be able to check a grant against whoever granted it.
+    """
 
     model_config = SIGNED_DOCUMENT
 
-    id: Identifier
+    v: Literal["0.2"] = "0.2"
+    type: Literal["mandate"] = "mandate"
+    id: MandateId
+    issued_at: UtcTimestamp
+    principal: Principal
+    # Named explicitly so a mandate cannot be picked up and used by an agent it
+    # was never granted to.
+    agent: Agent
     scope: Annotated[tuple[Identifier, ...], AfterValidator(_canonical_scope)]
     expires_at: UtcTimestamp
     max_value: Money | None = None
@@ -221,13 +238,17 @@ class ActionReceipt(BaseModel):
 
     model_config = SIGNED_DOCUMENT
 
-    v: Literal["0.1"] = "0.1"
+    v: Literal["0.2"] = "0.2"
     type: Literal["action"] = "action"
     id: ReceiptId
     issued_at: UtcTimestamp
     agent: Agent
     principal: Principal
-    mandate: Mandate
+    # References the mandate rather than restating it. The hash commits to the
+    # grant's content, so the receipt cannot be checked against a mandate other
+    # than the one it was actually taken under.
+    mandate_id: MandateId
+    mandate_hash: Sha256Digest
     action: Action
     decision: Decision
     # Set when this action was taken by an agent acting on behalf of another
@@ -244,7 +265,7 @@ class OutcomeAttestation(BaseModel):
 
     model_config = SIGNED_DOCUMENT
 
-    v: Literal["0.1"] = "0.1"
+    v: Literal["0.2"] = "0.2"
     type: Literal["outcome"] = "outcome"
     id: OutcomeId
     receipt_id: ReceiptId
@@ -264,3 +285,7 @@ def new_receipt_id() -> str:
 
 def new_outcome_id() -> str:
     return f"outc_{uuid.uuid4().hex}"
+
+
+def new_mandate_id() -> str:
+    return f"mndt_{uuid.uuid4().hex}"

@@ -1,55 +1,30 @@
 import copy
 import json
+from datetime import timedelta
+from decimal import Decimal
 from pathlib import Path
 
 import pytest
-from cryptography.hazmat.primitives.asymmetric import ed25519
+from support import (
+    MANDATE_VECTOR,
+    OUTCOME_VECTOR,
+    PRIVATE_KEYS,
+    PUBLIC_KEYS,
+    RECEIPT_VECTOR,
+    document,
+)
 
-from datetime import timedelta
-from decimal import Decimal
-
+from agent_receipts.binding import mandate_digest
 from agent_receipts.cli import BAD_INPUT, NOT_VERIFIED, VERIFIED, main
-from agent_receipts.models import ActionReceipt, Decision, DecisionOutcome, Money
-from agent_receipts.signing import sign
 from agent_receipts.keys import jwks_from_public_keys
+from agent_receipts.models import ActionReceipt, Decision, DecisionOutcome, Mandate, Money
+from agent_receipts.signing import sign
 
-VECTOR_DIR = Path(__file__).parent / "vectors"
-KEY_MATERIAL = json.loads((VECTOR_DIR / "keys.json").read_text(encoding="utf-8"))["keys"]
-PUBLIC_KEYS = {
-    key_id: ed25519.Ed25519PrivateKey.from_private_bytes(bytes.fromhex(entry["seed_hex"])).public_key()
-    for key_id, entry in KEY_MATERIAL.items()
-}
-
-RECEIPT_VECTOR = json.loads(
-    (VECTOR_DIR / "001-receipt-written-non-canonically.json").read_text(encoding="utf-8")
-)
-OUTCOME_VECTOR = json.loads(
-    (VECTOR_DIR / "003-outcome-disputed-with-loss.json").read_text(encoding="utf-8")
-)
-
-
-PRIVATE_KEYS = {
-    key_id: ed25519.Ed25519PrivateKey.from_private_bytes(bytes.fromhex(entry["seed_hex"]))
-    for key_id, entry in KEY_MATERIAL.items()
-}
 
 
 def signed_receipt(path: Path, receipt: ActionReceipt) -> Path:
     envelope = sign(receipt, "key-1", PRIVATE_KEYS["key-1"])
     return write_envelope(path, envelope.model_dump(mode="json"))
-
-
-def over_mandate(receipt: ActionReceipt) -> ActionReceipt:
-    return receipt.model_copy(
-        update={
-            "action": receipt.action.model_copy(
-                update={"value": Money(amount=Decimal("500"), currency="USD")}
-            ),
-            "mandate": receipt.mandate.model_copy(
-                update={"expires_at": receipt.issued_at - timedelta(days=1)}
-            ),
-        }
-    )
 
 
 def write_envelope(path: Path, envelope: dict) -> Path:
@@ -77,6 +52,11 @@ def outcome_file(tmp_path) -> Path:
 @pytest.fixture
 def receipt_file(tmp_path) -> Path:
     return write_envelope(tmp_path / "receipt.json", RECEIPT_VECTOR["envelope"])
+
+
+@pytest.fixture
+def mandate_file(tmp_path) -> Path:
+    return write_envelope(tmp_path / "mandate.json", MANDATE_VECTOR["envelope"])
 
 
 def test_verifies_a_good_envelope(envelope_file, keys_file, capsys):
@@ -240,17 +220,64 @@ def test_names_the_receipt_it_checked_the_binding_against(
     assert "receipt    rcpt_0123456789abcdef0123456789abcdef signed by key-1" in out
 
 
-def test_a_receipt_within_its_mandate_reports_scope_ok(envelope_file, keys_file, capsys):
-    main(["verify", str(envelope_file), "--keys", str(keys_file)])
+def signed_mandate(path: Path, mandate: Mandate) -> Path:
+    envelope = sign(mandate, "principal-key", PRIVATE_KEYS["principal-key"])
+    return write_envelope(path, envelope.model_dump(mode="json"))
 
-    assert "scope      OK" in capsys.readouterr().out
+
+def rebind(receipt: ActionReceipt, mandate: Mandate) -> ActionReceipt:
+    return receipt.model_copy(
+        update={"mandate_id": mandate.id, "mandate_hash": mandate_digest(mandate)}
+    )
 
 
-def test_going_ahead_beyond_the_mandate_fails_with_every_reason(tmp_path, keys_file, capsys):
-    receipt = ActionReceipt.model_validate(RECEIPT_VECTOR["input"])
-    path = signed_receipt(tmp_path / "over.json", over_mandate(receipt))
+def beyond_the_grant(tmp_path, decision: DecisionOutcome) -> tuple[Path, Path]:
+    """A receipt spending above its ceiling under a mandate that had expired."""
+    mandate = document(MANDATE_VECTOR)
+    receipt = document(RECEIPT_VECTOR)
 
-    exit_code = main(["verify", str(path), "--keys", str(keys_file)])
+    lapsed = mandate.model_copy(update={"expires_at": receipt.issued_at - timedelta(days=1)})
+    overspent = rebind(receipt, lapsed).model_copy(
+        update={
+            "action": receipt.action.model_copy(
+                update={"value": Money(amount=Decimal("500"), currency="USD")}
+            ),
+            "decision": Decision(outcome=decision),
+        }
+    )
+    return (
+        signed_receipt(tmp_path / "receipt.json", overspent),
+        signed_mandate(tmp_path / "mandate.json", lapsed),
+    )
+
+
+def test_a_receipt_within_its_mandate_reports_scope_ok(
+    envelope_file, mandate_file, keys_file, capsys
+):
+    exit_code = main(
+        ["verify", str(envelope_file), "--keys", str(keys_file), "--mandate", str(mandate_file)]
+    )
+
+    out = capsys.readouterr().out
+    assert exit_code == VERIFIED
+    assert "scope      OK" in out
+    assert "granted by principal-key" in out
+
+
+def test_scope_is_not_claimed_to_be_checked_without_a_mandate(envelope_file, keys_file, capsys):
+    # A bare signature check must not read as an authority check.
+    exit_code = main(["verify", str(envelope_file), "--keys", str(keys_file)])
+
+    assert exit_code == VERIFIED
+    assert "not checked (no mandate supplied)" in capsys.readouterr().out
+
+
+def test_going_ahead_beyond_the_grant_fails_with_every_reason(tmp_path, keys_file, capsys):
+    receipt_path, mandate_path = beyond_the_grant(tmp_path, DecisionOutcome.ALLOW)
+
+    exit_code = main(
+        ["verify", str(receipt_path), "--keys", str(keys_file), "--mandate", str(mandate_path)]
+    )
 
     out = capsys.readouterr().out
     assert exit_code == NOT_VERIFIED
@@ -262,24 +289,69 @@ def test_going_ahead_beyond_the_mandate_fails_with_every_reason(tmp_path, keys_f
 def test_a_refused_out_of_scope_action_still_verifies(tmp_path, keys_file, capsys):
     # The receipt documents the system refusing something it should refuse.
     # That is a good record, not a failed verification.
-    receipt = ActionReceipt.model_validate(RECEIPT_VECTOR["input"])
-    refused = over_mandate(receipt).model_copy(
-        update={"decision": Decision(outcome=DecisionOutcome.DENY)}
-    )
-    path = signed_receipt(tmp_path / "refused.json", refused)
+    receipt_path, mandate_path = beyond_the_grant(tmp_path, DecisionOutcome.DENY)
 
-    exit_code = main(["verify", str(path), "--keys", str(keys_file)])
+    exit_code = main(
+        ["verify", str(receipt_path), "--keys", str(keys_file), "--mandate", str(mandate_path)]
+    )
 
     out = capsys.readouterr().out
     assert exit_code == VERIFIED
     assert "EXCEEDED, and refused" in out
 
 
-def test_the_receipt_in_a_pair_is_scope_checked_too(tmp_path, outcome_file, keys_file, capsys):
-    main(["verify", str(outcome_file), "--keys", str(keys_file), "--receipt", str(
-        write_envelope(tmp_path / "receipt.json", RECEIPT_VECTOR["envelope"])
-    )])
+def test_a_mandate_the_receipt_was_not_taken_under_is_rejected(
+    tmp_path, envelope_file, keys_file, capsys
+):
+    widened = document(MANDATE_VECTOR).model_copy(
+        update={"scope": ("payment.charge", "account.close")}
+    )
+    path = signed_mandate(tmp_path / "widened.json", widened)
+
+    exit_code = main(["verify", str(envelope_file), "--keys", str(keys_file), "--mandate", str(path)])
 
     out = capsys.readouterr().out
+    assert exit_code == NOT_VERIFIED
+    assert "NOT THIS RECEIPT'S" in out
+    assert "commits to different mandate content" in out
+    # Measuring the action against the wrong grant would answer a question
+    # nobody asked, so scope is not reported at all.
+    assert "scope" not in out
+
+
+def test_the_receipt_in_a_pair_is_checked_against_its_grant(
+    tmp_path, outcome_file, receipt_file, mandate_file, keys_file, capsys
+):
+    exit_code = main(
+        [
+            "verify", str(outcome_file),
+            "--keys", str(keys_file),
+            "--receipt", str(receipt_file),
+            "--mandate", str(mandate_file),
+        ]
+    )
+
+    out = capsys.readouterr().out
+    assert exit_code == VERIFIED
     assert "binding    OK" in out
     assert "scope      OK" in out
+
+
+def test_a_mandate_without_an_action_receipt_is_a_usage_error(
+    outcome_file, mandate_file, keys_file, capsys
+):
+    exit_code = main(
+        ["verify", str(outcome_file), "--keys", str(keys_file), "--mandate", str(mandate_file)]
+    )
+
+    assert exit_code == BAD_INPUT
+    assert "applies when an action receipt" in capsys.readouterr().err
+
+
+def test_mandate_flag_pointing_at_a_receipt_is_rejected(envelope_file, keys_file, capsys):
+    exit_code = main(
+        ["verify", str(envelope_file), "--keys", str(keys_file), "--mandate", str(envelope_file)]
+    )
+
+    assert exit_code == BAD_INPUT
+    assert "does not contain a mandate" in capsys.readouterr().err

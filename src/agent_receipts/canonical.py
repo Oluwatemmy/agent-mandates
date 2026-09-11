@@ -14,9 +14,9 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from agent_receipts.models import ActionReceipt, OutcomeAttestation
+from agent_receipts.models import ActionReceipt, Mandate, OutcomeAttestation
 
-SignedDocument = ActionReceipt | OutcomeAttestation
+SignedDocument = ActionReceipt | OutcomeAttestation | Mandate
 
 # Only these appear in a canonical document. There are deliberately no JSON
 # numbers: RFC 8785 serializes them as IEEE 754 doubles, which would silently

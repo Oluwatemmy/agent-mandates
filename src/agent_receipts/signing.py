@@ -21,7 +21,7 @@ from cryptography.hazmat.primitives.asymmetric import ed25519
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
 from agent_receipts.canonical import SignedDocument, canonical_bytes
-from agent_receipts.models import ActionReceipt, Identifier, OutcomeAttestation
+from agent_receipts.models import ActionReceipt, Identifier, Mandate, OutcomeAttestation
 
 ED25519_SIGNATURE_SIZE = 64
 SIGNATURE_TEXT_LENGTH = 86  # 64 bytes as unpadded base64url
@@ -74,7 +74,9 @@ class SignedEnvelope(BaseModel):
 
     model_config = ENVELOPE
 
-    payload: Annotated[ActionReceipt | OutcomeAttestation, Field(discriminator="type")]
+    payload: Annotated[
+        ActionReceipt | OutcomeAttestation | Mandate, Field(discriminator="type")
+    ]
     signatures: Annotated[tuple[Signature, ...], Field(min_length=1)]
 
     @model_validator(mode="after")
@@ -85,17 +87,35 @@ class SignedEnvelope(BaseModel):
         return self
 
     @model_validator(mode="after")
-    def _require_the_named_agent_to_have_signed(self) -> SignedEnvelope:
-        # An action receipt asserts what a particular agent did, so it must carry
-        # a signature from the key it names. Without this, a valid payload could
-        # be rewrapped and presented as signed by somebody else entirely. This is
-        # a structural check only; whether the signature verifies is a separate
-        # question answered by verified_signers.
-        if isinstance(self.payload, ActionReceipt):
-            signed_by = {signature.key_id for signature in self.signatures}
-            if self.payload.agent.key_id not in signed_by:
-                raise ValueError("an action receipt must be signed by the agent key it names")
+    def _require_the_document_to_be_signed_by_its_author(self) -> SignedEnvelope:
+        # A document asserting what somebody did or granted must carry a
+        # signature from the key it names as having done so. Without this, a
+        # valid payload could be rewrapped and presented as signed by somebody
+        # else entirely. This is a structural check only; whether the signature
+        # verifies is a separate question answered by verified_signers.
+        #
+        # An outcome attestation is exempt: it is issued by whichever party
+        # observed the result, which the document does not name, and the
+        # verifier decides whose attestation it trusts.
+        required = _required_signer(self.payload)
+        if required is None:
+            return self
+
+        if required not in {signature.key_id for signature in self.signatures}:
+            raise ValueError(f"this document must be signed by the key it names: {required}")
         return self
+
+
+def _required_signer(payload: SignedDocument) -> str | None:
+    if isinstance(payload, ActionReceipt):
+        # The receipt asserts what this agent did.
+        return payload.agent.key_id
+    if isinstance(payload, Mandate):
+        # The mandate grants authority, which only its principal can do. A grant
+        # signed by the agent receiving it would be the agent authorizing
+        # itself, which is exactly what separating the documents prevents.
+        return payload.principal.key_id
+    return None
 
 
 def sign(document: SignedDocument, key_id: str, private_key: ed25519.Ed25519PrivateKey) -> SignedEnvelope:

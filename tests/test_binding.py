@@ -1,52 +1,59 @@
-"""Binding an outcome to the receipt it reports on.
+"""Binding documents to the documents they refer to.
 
-The property under test: two documents that each verify on their own must not
-be presentable as a pair unless the outcome actually commits to that receipt.
+The property under test, in both pairings: two documents that each verify on
+their own must not be presentable as a pair unless the referring one actually
+commits to the referenced one.
 """
 
 import copy
-import json
 from datetime import timedelta
 from decimal import Decimal
-from pathlib import Path
 
 import pytest
+from support import MANDATE_VECTOR, OUTCOME_VECTOR, RECEIPT_VECTOR, document
 
 from agent_receipts.binding import (
-    BindingProblem,
+    MANDATE_PROBLEM_DESCRIPTIONS,
     PROBLEM_DESCRIPTIONS,
+    BindingProblem,
+    MandateProblem,
     binding_problems,
+    mandate_digest,
+    mandate_problems,
     outcome_for,
     receipt_digest,
 )
 from agent_receipts.models import (
     ActionReceipt,
+    Agent,
     Decision,
     DecisionOutcome,
     DisputeResolution,
     Money,
     OutcomeAttestation,
     OutcomeStatus,
+    Principal,
+    PrincipalType,
+    Mandate,
+    new_mandate_id,
     new_receipt_id,
 )
 
-VECTOR_DIR = Path(__file__).parent / "vectors"
-RECEIPT_VECTOR = json.loads(
-    (VECTOR_DIR / "001-receipt-written-non-canonically.json").read_text(encoding="utf-8")
-)
-OUTCOME_VECTOR = json.loads(
-    (VECTOR_DIR / "003-outcome-disputed-with-loss.json").read_text(encoding="utf-8")
-)
+
+
+@pytest.fixture
+def mandate() -> Mandate:
+    return document(MANDATE_VECTOR)
 
 
 @pytest.fixture
 def receipt() -> ActionReceipt:
-    return ActionReceipt.model_validate(RECEIPT_VECTOR["input"])
+    return document(RECEIPT_VECTOR)
 
 
 @pytest.fixture
 def outcome() -> OutcomeAttestation:
-    return OutcomeAttestation.model_validate(OUTCOME_VECTOR["input"])
+    return document(OUTCOME_VECTOR)
 
 
 def test_a_matching_pair_has_no_problems(receipt, outcome):
@@ -167,3 +174,74 @@ def test_a_bound_outcome_still_records_the_loss(receipt):
 
     assert attested.loss == Money(amount=Decimal("42.5"), currency="USD")
     assert attested.resolution is DisputeResolution.MERCHANT_LOST
+
+
+def test_a_receipt_taken_under_its_mandate_has_no_problems(mandate, receipt):
+    assert mandate_problems(mandate, receipt) == frozenset()
+
+
+def test_a_mandate_with_the_same_id_but_different_terms_does_not_bind(mandate, receipt):
+    # Quietly widening a grant after the fact is the attack this closes.
+    widened = mandate.model_copy(update={"scope": ("payment.charge", "account.close")})
+
+    assert mandate_problems(widened, receipt) == {MandateProblem.MANDATE_HASH_MISMATCH}
+    assert widened.id == receipt.mandate_id
+
+
+def test_a_mandate_granted_to_another_agent_cannot_be_claimed(mandate, receipt):
+    someone_else = mandate.model_copy(update={"agent": Agent(id="agent:other", key_id="key-9")})
+
+    assert MandateProblem.GRANTED_TO_ANOTHER_AGENT in mandate_problems(someone_else, receipt)
+
+
+def test_an_agent_sharing_an_id_but_not_a_key_cannot_claim_the_grant(mandate, receipt):
+    # Compared whole rather than by id, so a different signing key is enough to
+    # make this a different agent.
+    rekeyed = mandate.model_copy(update={"agent": Agent(id=mandate.agent.id, key_id="key-9")})
+
+    assert MandateProblem.GRANTED_TO_ANOTHER_AGENT in mandate_problems(rekeyed, receipt)
+
+
+def test_a_mandate_from_another_principal_is_reported(mandate, receipt):
+    elsewhere = mandate.model_copy(
+        update={
+            "principal": Principal(
+                id="user:9999", type=PrincipalType.HUMAN, key_id="other-principal"
+            )
+        }
+    )
+
+    assert MandateProblem.GRANTED_BY_ANOTHER_PRINCIPAL in mandate_problems(elsewhere, receipt)
+
+
+def test_an_entirely_different_mandate_fails_on_id_and_hash(mandate, receipt):
+    unrelated = mandate.model_copy(update={"id": new_mandate_id()})
+
+    assert mandate_problems(unrelated, receipt) >= {
+        MandateProblem.MANDATE_ID_MISMATCH,
+        MandateProblem.MANDATE_HASH_MISMATCH,
+    }
+
+
+def test_an_action_taken_before_the_grant_existed_is_reported(mandate, receipt):
+    granted_later = mandate.model_copy(update={"issued_at": receipt.issued_at + timedelta(seconds=1)})
+
+    assert MandateProblem.ACTION_PRECEDES_MANDATE in mandate_problems(granted_later, receipt)
+
+
+def test_an_action_at_the_instant_of_the_grant_is_allowed(mandate, receipt):
+    granted_then = mandate.model_copy(update={"issued_at": receipt.issued_at})
+    rebound = receipt.model_copy(update={"mandate_hash": mandate_digest(granted_then)})
+
+    assert mandate_problems(granted_then, rebound) == frozenset()
+
+
+def test_the_mandate_digest_covers_canonical_bytes_not_the_written_form():
+    as_received = Mandate.model_validate(MANDATE_VECTOR["input"])
+    as_canonical = Mandate.model_validate(MANDATE_VECTOR["canonical"])
+
+    assert mandate_digest(as_received) == mandate_digest(as_canonical)
+
+
+def test_every_mandate_problem_has_a_description():
+    assert set(MANDATE_PROBLEM_DESCRIPTIONS) == set(MandateProblem)

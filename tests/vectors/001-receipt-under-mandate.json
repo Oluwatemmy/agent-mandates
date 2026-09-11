@@ -1,5 +1,5 @@
 {
-  "description": "Every value written in a non-canonical form: offset timestamp, trailing-zero amounts, unsorted duplicated scope, decomposed Unicode identifier, bare-origin target, absent optional field.",
+  "description": "An action taken under vector 000, written non-canonically and bound to that grant by hash.",
   "document_type": "action",
   "input": {
     "id": "rcpt_0123456789abcdef0123456789abcdef",
@@ -10,21 +10,11 @@
     },
     "principal": {
       "id": "user:1234",
-      "type": "human"
+      "type": "human",
+      "key_id": "principal-key"
     },
-    "mandate": {
-      "id": "mandate:abc",
-      "scope": [
-        "payment.charge",
-        "order.create",
-        "payment.charge"
-      ],
-      "expires_at": "2026-09-10T14:03:11Z",
-      "max_value": {
-        "amount": "100.00",
-        "currency": "USD"
-      }
-    },
+    "mandate_id": "mndt_aaaa1111bbbb2222cccc3333dddd4444",
+    "mandate_hash": "sha256:235afb121f14e82dde427d7ea9b796f8ac1c75a8bc0ac9435b1420841eff0412",
     "action": {
       "type": "payment.charge",
       "target": "https://api.example.com",
@@ -39,7 +29,7 @@
     }
   },
   "canonical": {
-    "v": "0.1",
+    "v": "0.2",
     "type": "action",
     "id": "rcpt_0123456789abcdef0123456789abcdef",
     "issued_at": "2026-09-09T14:03:11.999Z",
@@ -49,20 +39,11 @@
     },
     "principal": {
       "id": "user:1234",
-      "type": "human"
+      "type": "human",
+      "key_id": "principal-key"
     },
-    "mandate": {
-      "id": "mandate:abc",
-      "scope": [
-        "order.create",
-        "payment.charge"
-      ],
-      "expires_at": "2026-09-10T14:03:11.000Z",
-      "max_value": {
-        "amount": "100",
-        "currency": "USD"
-      }
-    },
+    "mandate_id": "mndt_aaaa1111bbbb2222cccc3333dddd4444",
+    "mandate_hash": "sha256:235afb121f14e82dde427d7ea9b796f8ac1c75a8bc0ac9435b1420841eff0412",
     "action": {
       "type": "payment.charge",
       "target": "https://api.example.com",
@@ -77,10 +58,10 @@
       "reasons": []
     }
   },
-  "canonical_bytes_sha256": "61de2e02bbae51b33a15e59c76d0233b2d4956b1d6babafbcb79da00bdab2114",
+  "canonical_bytes_sha256": "289f4dc760da2e07a9f5d57f95dffdaacb152213982a72aecb9158455acd6162",
   "envelope": {
     "payload": {
-      "v": "0.1",
+      "v": "0.2",
       "type": "action",
       "id": "rcpt_0123456789abcdef0123456789abcdef",
       "issued_at": "2026-09-09T14:03:11.999Z",
@@ -90,20 +71,11 @@
       },
       "principal": {
         "id": "user:1234",
-        "type": "human"
+        "type": "human",
+        "key_id": "principal-key"
       },
-      "mandate": {
-        "id": "mandate:abc",
-        "scope": [
-          "order.create",
-          "payment.charge"
-        ],
-        "expires_at": "2026-09-10T14:03:11.000Z",
-        "max_value": {
-          "amount": "100",
-          "currency": "USD"
-        }
-      },
+      "mandate_id": "mndt_aaaa1111bbbb2222cccc3333dddd4444",
+      "mandate_hash": "sha256:235afb121f14e82dde427d7ea9b796f8ac1c75a8bc0ac9435b1420841eff0412",
       "action": {
         "type": "payment.charge",
         "target": "https://api.example.com",
@@ -123,7 +95,7 @@
       {
         "alg": "Ed25519",
         "key_id": "key-1",
-        "value": "8hHfWQYqmNhTk34dCSyutevBaDVW29DlzfcAbFigSKU-XJaG2r9Tsinh8PidPxcGC1jR_mBz0Agb6PRpdeibBg"
+        "value": "NKeuTEzslGRPTChyyaFSnmWV_T2b9aEcm_NVPwT2nJjlmIXUZazEnKBLfy34vnpUlJFaRk0UnhqLdfDY_bZNAg"
       }
     ]
   }

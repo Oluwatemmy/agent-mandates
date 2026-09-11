@@ -15,30 +15,16 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric import ed25519
 from pydantic import ValidationError
 
+from support import MANDATE_VECTOR, PRIVATE_KEYS, PUBLIC_KEYS, VECTOR_PATHS, document
+
 from agent_receipts.canonical import canonical_bytes
-from agent_receipts.models import ActionReceipt, OutcomeAttestation
 from agent_receipts.signing import SignedEnvelope, add_signature, sign, verified_signers
-
-VECTOR_DIR = Path(__file__).parent / "vectors"
-VECTOR_PATHS = sorted(VECTOR_DIR.glob("[0-9]*.json"))
-DOCUMENT_TYPES = {"action": ActionReceipt, "outcome": OutcomeAttestation}
-
-KEY_MATERIAL = json.loads((VECTOR_DIR / "keys.json").read_text(encoding="utf-8"))["keys"]
-PRIVATE_KEYS = {
-    key_id: ed25519.Ed25519PrivateKey.from_private_bytes(bytes.fromhex(entry["seed_hex"]))
-    for key_id, entry in KEY_MATERIAL.items()
-}
-PUBLIC_KEYS = {key_id: private.public_key() for key_id, private in PRIVATE_KEYS.items()}
 
 ATTACKER_KEY = ed25519.Ed25519PrivateKey.from_private_bytes(bytes([0xFF] * 32))
 
 
 def load(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
-
-
-def document_from(vector: dict):
-    return DOCUMENT_TYPES[vector["document_type"]].model_validate(vector["input"])
 
 
 def receipt_vector() -> dict:
@@ -65,7 +51,7 @@ def test_signing_is_reproducible_from_the_seed(vector_path):
     vector = load(vector_path)
     signer = vector["envelope"]["signatures"][0]["key_id"]
 
-    resigned = sign(document_from(vector), signer, PRIVATE_KEYS[signer])
+    resigned = sign(document(vector), signer, PRIVATE_KEYS[signer])
 
     assert resigned.model_dump(mode="json") == vector["envelope"]
 
@@ -131,8 +117,8 @@ def test_a_receipt_cannot_be_re_enveloped_under_a_different_agent_key():
     # names key-1 as its agent, so nothing else may present it as its own.
     vector = receipt_vector()
 
-    with pytest.raises(ValidationError, match="signed by the agent key it names"):
-        sign(document_from(vector), "merchant-key", PRIVATE_KEYS["merchant-key"])
+    with pytest.raises(ValidationError, match="must be signed by the key it names"):
+        sign(document(vector), "merchant-key", PRIVATE_KEYS["merchant-key"])
 
 
 def test_claiming_the_agent_key_id_without_its_private_key_does_not_verify():
@@ -140,7 +126,7 @@ def test_claiming_the_agent_key_id_without_its_private_key_does_not_verify():
     # verify under the real public key for that id.
     vector = receipt_vector()
 
-    forged = sign(document_from(vector), "key-1", ATTACKER_KEY)
+    forged = sign(document(vector), "key-1", ATTACKER_KEY)
 
     assert forged.signatures[0].key_id == "key-1"
     assert verified_signers(forged, PUBLIC_KEYS) == frozenset()
@@ -220,3 +206,38 @@ def test_rejects_a_non_canonical_base64_signature():
         SignedEnvelope.model_validate(
             {**vector["envelope"], "signatures": [{**vector["envelope"]["signatures"][0], "value": altered}]}
         )
+
+
+def mandate_vector() -> dict:
+    return MANDATE_VECTOR
+
+
+def test_an_agent_cannot_sign_its_own_mandate():
+    # The point of separating the grant from the receipt. A mandate signed by
+    # the agent receiving it would be the agent authorizing itself.
+    with pytest.raises(ValidationError, match="must be signed by the key it names"):
+        sign(document(mandate_vector()), "key-1", PRIVATE_KEYS["key-1"])
+
+
+def test_a_mandate_must_be_signed_by_the_principal_it_names():
+    granted = sign(document(mandate_vector()), "principal-key", PRIVATE_KEYS["principal-key"])
+
+    assert verified_signers(granted, PUBLIC_KEYS) == {"principal-key"}
+
+
+def test_claiming_the_principal_key_id_without_its_private_key_does_not_verify():
+    forged = sign(document(mandate_vector()), "principal-key", ATTACKER_KEY)
+
+    assert forged.signatures[0].key_id == "principal-key"
+    assert verified_signers(forged, PUBLIC_KEYS) == frozenset()
+
+
+def test_an_outcome_has_no_required_signer():
+    # Outcomes are issued by whichever party observed the result, which the
+    # document does not name, so the verifier decides whose attestation to
+    # trust rather than the format deciding for it.
+    outcome = document(outcome_vector())
+
+    signed = sign(outcome, "key-1", PRIVATE_KEYS["key-1"])
+
+    assert verified_signers(signed, PUBLIC_KEYS) == {"key-1"}
