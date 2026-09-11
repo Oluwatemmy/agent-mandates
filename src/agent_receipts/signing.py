@@ -43,12 +43,12 @@ def _encode(raw: bytes) -> str:
     return base64.urlsafe_b64encode(raw).rstrip(b"=").decode("ascii")
 
 
-def _decode(text: str) -> bytes:
+def decode_signature(text: str) -> bytes:
     return base64.urlsafe_b64decode(text + "=" * (-len(text) % 4))
 
 
 def _require_canonical_signature(text: str) -> str:
-    raw = _decode(text)
+    raw = decode_signature(text)
     if len(raw) != ED25519_SIGNATURE_SIZE:
         raise ValueError(f"an Ed25519 signature is {ED25519_SIGNATURE_SIZE} bytes")
     # Trailing bits in the final base64 character are unconstrained, so the same
@@ -161,7 +161,7 @@ def verified_signers(
         if public_key is None:
             continue
         try:
-            public_key.verify(_decode(signature.value), signed)
+            public_key.verify(decode_signature(signature.value), signed)
         except InvalidSignature:
             continue
         verified.add(signature.key_id)
