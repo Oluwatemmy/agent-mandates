@@ -23,6 +23,12 @@ SignedDocument = ActionReceipt | OutcomeAttestation | Mandate
 # round any amount or large integer before it was signed.
 JsonValue = dict[str, "JsonValue"] | list["JsonValue"] | str
 
+# Documents are a handful of levels deep, so anything approaching this is not
+# a document. Serialization recurses, and untrusted input that exhausts the
+# stack is a crash rather than a refusal, which is not an acceptable way to
+# reject something.
+MAX_DEPTH = 64
+
 
 def canonical_json_value(document: SignedDocument) -> dict[str, Any]:
     """The JSON value that will be serialized and signed.
@@ -62,29 +68,34 @@ def canonical_json_bytes(value: JsonValue) -> bytes:
 
     4. No whitespace anywhere, and the output is UTF-8.
 
+    Nesting deeper than MAX_DEPTH is refused rather than allowed to exhaust
+    the stack, since a caller may hand this untrusted input.
+
     Only rule 1 is implemented here. Rules 2 to 4 are exactly what the standard
     library already emits with ensure_ascii disabled and no separators padding,
     verified against the reference implementation in the differential tests.
     """
     return json.dumps(
-        _with_keys_in_utf16_order(value),
+        _with_keys_in_utf16_order(value, MAX_DEPTH),
         ensure_ascii=False,
         separators=(",", ":"),
     ).encode("utf-8")
 
 
-def _with_keys_in_utf16_order(value: JsonValue) -> JsonValue:
+def _with_keys_in_utf16_order(value: JsonValue, depth: int) -> JsonValue:
     if isinstance(value, str):
         return value
+    if depth == 0:
+        raise ValueError(f"nested deeper than {MAX_DEPTH} levels")
     if isinstance(value, list):
-        return [_with_keys_in_utf16_order(item) for item in value]
+        return [_with_keys_in_utf16_order(item, depth - 1) for item in value]
     if isinstance(value, dict):
         # Sorted on the UTF-16 encoding rather than with json's sort_keys, which
         # orders by code point. The two disagree above U+FFFF, where a character
         # becomes a surrogate pair whose lead unit (U+D800-U+DBFF) sorts below
         # ordinary BMP characters such as U+FB33.
         return {
-            name: _with_keys_in_utf16_order(value[name])
+            name: _with_keys_in_utf16_order(value[name], depth - 1)
             for name in sorted(value, key=lambda name: name.encode("utf-16-be"))
         }
     # Reached only if a numeric or boolean field is added to a document. JSON
