@@ -18,11 +18,12 @@ an agent quietly granting itself the ability to spend more.
 from __future__ import annotations
 
 from collections.abc import Sequence
+from datetime import datetime
 from enum import StrEnum
 from itertools import pairwise
 
 from agent_receipts.binding import mandate_digest
-from agent_receipts.models import Mandate, Principal
+from agent_receipts.models import Agent, DelegationLink, Mandate, Money, Principal, new_mandate_id
 
 # A verifier walks a chain link by link, so an unbounded one is work an attacker
 # can hand it for free. Eight is far past any plausible real delegation depth.
@@ -133,6 +134,51 @@ def accountable_principal(chain: Sequence[Mandate]) -> Principal:
     if not chain:
         raise ValueError("an empty chain has no principal")
     return chain[0].principal
+
+
+def delegate(
+    mandate: Mandate,
+    *,
+    to: Agent,
+    issued_at: datetime,
+    scope: tuple[str, ...] | None = None,
+    expires_at: datetime | None = None,
+    max_value: Money | None = None,
+    mandate_id: str | None = None,
+) -> Mandate:
+    """Pass some of a grant's authority on to another agent.
+
+    Anything left unspecified is inherited from the parent, so the default is to
+    narrow nothing. A ceiling cannot be removed through this function, because
+    removing one is the widest possible widening; pass a lower one instead.
+
+    Refuses to build a grant that widens what it received. The check exists
+    anyway on the verifying side, since documents arrive from outside, but a
+    widening grant is not something a caller should be able to produce by
+    accident.
+    """
+    delegated = Mandate(
+        id=mandate_id or new_mandate_id(),
+        issued_at=issued_at,
+        principal=mandate.principal,
+        agent=to,
+        scope=scope if scope is not None else mandate.scope,
+        expires_at=expires_at if expires_at is not None else mandate.expires_at,
+        max_value=max_value if max_value is not None else mandate.max_value,
+        delegated_from=DelegationLink(
+            mandate_id=mandate.id,
+            mandate_hash=mandate_digest(mandate),
+            agent=mandate.agent,
+        ),
+    )
+
+    widened = _attenuation_problems(mandate, delegated)
+    if widened:
+        raise ValueError(
+            "a delegated grant cannot widen what it received: "
+            + ", ".join(sorted(DELEGATION_PROBLEM_DESCRIPTIONS[problem] for problem in widened))
+        )
+    return delegated
 
 
 def _attenuation_problems(parent: Mandate, child: Mandate) -> set[DelegationProblem]:

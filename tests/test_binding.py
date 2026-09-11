@@ -246,3 +246,23 @@ def test_the_mandate_digest_covers_canonical_bytes_not_the_written_form():
 
 def test_every_mandate_problem_has_a_description():
     assert set(MANDATE_PROBLEM_DESCRIPTIONS) == set(MandateProblem)
+
+
+def test_receipt_under_binds_to_the_grant_it_was_taken_under(mandate):
+    from agent_receipts.binding import receipt_under
+    from agent_receipts.models import Action, Decision, DecisionOutcome
+
+    recorded = receipt_under(
+        mandate,
+        action=Action(
+            type="payment.charge",
+            target="https://api.example.com/v1/orders",
+            params_hash="sha256:" + "a" * 64,
+        ),
+        decision=Decision(outcome=DecisionOutcome.ALLOW),
+        issued_at=mandate.issued_at,
+    )
+
+    assert mandate_problems(mandate, recorded) == frozenset()
+    assert recorded.agent == mandate.agent
+    assert recorded.principal == mandate.principal

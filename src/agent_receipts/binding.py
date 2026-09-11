@@ -28,7 +28,9 @@ from enum import StrEnum
 
 from agent_receipts.canonical import canonical_bytes
 from agent_receipts.models import (
+    Action,
     ActionReceipt,
+    Decision,
     DecisionOutcome,
     DisputeResolution,
     Mandate,
@@ -36,6 +38,7 @@ from agent_receipts.models import (
     OutcomeAttestation,
     OutcomeStatus,
     new_outcome_id,
+    new_receipt_id,
 )
 
 
@@ -121,6 +124,35 @@ def binding_problems(
         problems.add(BindingProblem.ACTION_WAS_REFUSED)
 
     return frozenset(problems)
+
+
+def receipt_under(
+    mandate: Mandate,
+    *,
+    action: Action,
+    decision: Decision,
+    issued_at: datetime,
+    receipt_id: str | None = None,
+    prev: str | None = None,
+) -> ActionReceipt:
+    """Record an action taken under a grant.
+
+    Computes the mandate hash for the same reason outcome_for computes the
+    receipt hash: a document built by hand is one transcription error away from
+    being unbindable, and the error surfaces only when somebody needs it as
+    evidence.
+    """
+    return ActionReceipt(
+        id=receipt_id or new_receipt_id(),
+        issued_at=issued_at,
+        agent=mandate.agent,
+        principal=mandate.principal,
+        mandate_id=mandate.id,
+        mandate_hash=mandate_digest(mandate),
+        action=action,
+        decision=decision,
+        prev=prev,
+    )
 
 
 def outcome_for(

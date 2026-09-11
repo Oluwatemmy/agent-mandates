@@ -84,6 +84,15 @@ class SignedEnvelope(BaseModel):
     payload: Annotated[ActionReceipt | OutcomeAttestation | Mandate, Field(discriminator="type")]
     signatures: Annotated[tuple[Signature, ...], Field(min_length=1)]
 
+    def to_json(self, *, indent: int | None = None) -> str:
+        """The envelope as it goes on the wire.
+
+        Absent optional fields are omitted rather than written as null, matching
+        how the canonical form writes them. Plain model_dump_json would emit the
+        nulls, which verifies the same but does not match the format.
+        """
+        return self.model_dump_json(exclude_none=True, indent=indent)
+
     @model_validator(mode="after")
     def _reject_repeated_signers(self) -> SignedEnvelope:
         key_ids = [signature.key_id for signature in self.signatures]

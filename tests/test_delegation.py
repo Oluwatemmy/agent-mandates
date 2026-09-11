@@ -16,6 +16,7 @@ from agent_receipts.delegation import (
     DelegationProblem,
     accountable_principal,
     chain_problems,
+    delegate,
     delegation_problems,
 )
 from agent_receipts.models import (
@@ -258,3 +259,49 @@ def test_an_empty_chain_has_no_principal():
 
 def test_every_problem_has_a_description():
     assert set(DELEGATION_PROBLEM_DESCRIPTIONS) == set(DelegationProblem)
+
+
+def test_delegate_inherits_everything_left_unspecified(root):
+    passed_on = delegate(root, to=Agent(id="agent:sub", key_id="key-2"), issued_at=root.issued_at)
+
+    assert delegation_problems(root, passed_on) == frozenset()
+    assert passed_on.scope == root.scope
+    assert passed_on.expires_at == root.expires_at
+    assert passed_on.max_value == root.max_value
+
+
+def test_delegate_narrows_what_it_is_given(root):
+    passed_on = delegate(
+        root,
+        to=Agent(id="agent:sub", key_id="key-2"),
+        issued_at=root.issued_at,
+        max_value=Money(amount=Decimal("1"), currency="USD"),
+        expires_at=root.issued_at,
+    )
+
+    assert delegation_problems(root, passed_on) == frozenset()
+
+
+@pytest.mark.parametrize(
+    "widening",
+    [
+        {"max_value": Money(amount=Decimal("100000"), currency="USD")},
+        {"scope": ("payment.charge", "account.close")},
+        {"max_value": Money(amount=Decimal("1"), currency="EUR")},
+    ],
+)
+def test_delegate_refuses_to_build_a_widening_grant(root, widening):
+    # The verifying side checks this too, since documents arrive from outside,
+    # but a widening grant should not be producible by accident.
+    with pytest.raises(ValueError, match="cannot widen what it received"):
+        delegate(
+            root, to=Agent(id="agent:sub", key_id="key-2"), issued_at=root.issued_at, **widening
+        )
+
+
+def test_delegate_cannot_remove_a_ceiling(root):
+    # Passing no ceiling inherits the parent's rather than dropping it, since
+    # dropping one is the widest possible widening.
+    passed_on = delegate(root, to=Agent(id="agent:sub", key_id="key-2"), issued_at=root.issued_at)
+
+    assert passed_on.max_value == root.max_value

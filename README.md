@@ -38,8 +38,55 @@ implementation can reproduce the same signature bytes.
 - [x] Mandate scope checking
 - [x] Principal-signed mandates
 - [x] Delegation chains
-- [ ] Hardening: CI matrix, property-based tests, parser fuzzing
+- [x] Hardening: CI matrix, property-based tests, parser fuzzing
 - [ ] Publish to PyPI
+
+## A whole transaction
+
+[`examples/walkthrough.py`](examples/walkthrough.py) issues a grant, records an
+action under it, attests the outcome and publishes the public keys. The test
+suite runs that file, so it cannot drift from the library.
+
+```python
+# Alice grants her shopping agent authority to charge up to 200 USD.
+mandate = Mandate(
+    id=new_mandate_id(), issued_at=now, principal=alice, agent=shopper,
+    scope=("payment.charge",), expires_at=now + timedelta(days=30),
+    max_value=Money(amount=Decimal("200.00"), currency="USD"),
+)
+
+# The agent charges 79.99. receipt_under commits to the grant, so the
+# binding cannot be mistyped.
+receipt = receipt_under(
+    mandate,
+    action=Action(type="payment.charge", target="https://shop.example.com/v1/orders",
+                  params_hash=..., value=Money(amount=Decimal("79.99"), currency="USD")),
+    decision=Decision(outcome=DecisionOutcome.ALLOW),
+    issued_at=now + timedelta(minutes=2),
+)
+
+# Two days later the merchant attests what happened.
+outcome = outcome_for(receipt, status=OutcomeStatus.COMPLETED,
+                      issued_at=now + timedelta(days=2))
+
+envelope = sign(mandate, "alice", alice_key)
+```
+
+Then anyone holding the published keys can check the whole chain:
+
+```
+$ receipts verify outcome.json --keys jwks.json       --receipt receipt.json --mandate mandate.json
+
+document   outc_70744f1f3219436cb220f281817fee60 (outcome attestation)
+status     completed
+signed by  merchant
+receipt    rcpt_1614b59b188b4e8b8cffe7d14be710db signed by shopper
+binding    OK
+mandate    mndt_5533e1521b474eb5a62f310837f472a5 granted by alice
+chain      OK, answering to user:alice (human)
+scope      OK
+result     VERIFIED
+```
 
 ## Verifying
 
