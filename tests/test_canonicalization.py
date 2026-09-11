@@ -199,3 +199,20 @@ def test_canonical_form_contains_no_json_numbers():
     numeric = [s for s in _scalars(canonical_json_value(receipt)) if isinstance(s, (int, float))]
 
     assert numeric == []
+
+
+def test_canonical_form_survives_a_document_built_by_model_copy():
+    # model_copy(update=...) skips pydantic validators, so an object in memory
+    # can hold non-canonical values. Signing such an object once produced a
+    # signature that stopped verifying after a JSON round trip.
+    mandate = Mandate(
+        id=MANDATE_ID,
+        issued_at=EXPIRES_AT,
+        principal=PRINCIPAL,
+        agent=AGENT,
+        scope=("a.read", "b.write"),
+        expires_at=EXPIRES_AT,
+    )
+    unsorted_copy = mandate.model_copy(update={"scope": ("b.write", "a.read")})
+
+    assert canonical_json_value(unsorted_copy) == canonical_json_value(mandate)

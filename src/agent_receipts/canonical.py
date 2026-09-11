@@ -29,8 +29,17 @@ def canonical_json_value(document: SignedDocument) -> dict[str, Any]:
 
     Absent optional fields are omitted rather than written as null, so that a
     document carrying no loss has one representation instead of two.
+
+    The document is revalidated first. Pydantic's model_copy(update=...) skips
+    validators, so an object in memory is not guaranteed to hold canonical
+    values -- an unsorted scope, say. Without this, signing such an object would
+    produce a signature that stops verifying the moment the document is written
+    to JSON and read back, which is silent and precisely the failure this
+    library exists to prevent. Canonical form is defined by the rules, not by
+    however the object happened to be built.
     """
-    return document.model_dump(mode="json", exclude_none=True)
+    normalized = type(document).model_validate(document.model_dump())
+    return normalized.model_dump(mode="json", exclude_none=True)
 
 
 def canonical_json_bytes(value: JsonValue) -> bytes:
