@@ -1,0 +1,167 @@
+"""Checking a recorded action against its mandate."""
+
+import json
+from datetime import timedelta
+from decimal import Decimal
+from pathlib import Path
+
+import pytest
+
+from agent_receipts.models import ActionReceipt, Decision, DecisionOutcome, Money
+from agent_receipts.scope import (
+    VIOLATION_DESCRIPTIONS,
+    ScopeViolation,
+    allowed_beyond_mandate,
+    scope_violations,
+)
+
+VECTOR_DIR = Path(__file__).parent / "vectors"
+RECEIPT_VECTOR = json.loads(
+    (VECTOR_DIR / "001-receipt-written-non-canonically.json").read_text(encoding="utf-8")
+)
+PARAMS_HASH = "sha256:" + "a" * 64
+
+
+@pytest.fixture
+def receipt() -> ActionReceipt:
+    return ActionReceipt.model_validate(RECEIPT_VECTOR["input"])
+
+
+def with_mandate(receipt: ActionReceipt, **changes) -> ActionReceipt:
+    return receipt.model_copy(update={"mandate": receipt.mandate.model_copy(update=changes)})
+
+
+def with_action(receipt: ActionReceipt, **changes) -> ActionReceipt:
+    return receipt.model_copy(update={"action": receipt.action.model_copy(update=changes)})
+
+
+def with_decision(receipt: ActionReceipt, outcome: DecisionOutcome) -> ActionReceipt:
+    return receipt.model_copy(update={"decision": Decision(outcome=outcome)})
+
+
+def test_an_action_inside_its_mandate_has_no_violations(receipt):
+    assert scope_violations(receipt) == frozenset()
+
+
+def test_an_action_type_outside_the_scope_is_reported(receipt):
+    wandered = with_action(receipt, type="account.close")
+
+    assert scope_violations(wandered) == {ScopeViolation.ACTION_OUTSIDE_SCOPE}
+
+
+def test_a_value_above_the_limit_is_reported(receipt):
+    overspent = with_action(receipt, value=Money(amount=Decimal("500"), currency="USD"))
+
+    assert scope_violations(overspent) == {ScopeViolation.VALUE_EXCEEDS_LIMIT}
+
+
+def test_a_value_exactly_at_the_limit_is_allowed(receipt):
+    at_limit = with_action(receipt, value=Money(amount=Decimal("100.00"), currency="USD"))
+
+    assert scope_violations(at_limit) == frozenset()
+
+
+def test_a_limit_in_another_currency_fails_closed(receipt):
+    # Converting would mean inventing an exchange rate; passing would mean
+    # treating an unconstrained currency as constrained.
+    other_currency = with_action(receipt, value=Money(amount=Decimal("1"), currency="EUR"))
+
+    assert scope_violations(other_currency) == {ScopeViolation.LIMIT_CURRENCY_MISMATCH}
+
+
+def test_a_currency_mismatch_is_reported_even_when_the_amount_looks_small(receipt):
+    # The amount is far below the numeric limit, so a check that compared
+    # amounts before currencies would wave this through.
+    trivial = with_action(receipt, value=Money(amount=Decimal("0.01"), currency="JPY"))
+
+    assert ScopeViolation.LIMIT_CURRENCY_MISMATCH in scope_violations(trivial)
+
+
+def test_a_mandate_without_a_ceiling_does_not_limit_value(receipt):
+    unlimited = with_mandate(receipt, max_value=None)
+    expensive = with_action(unlimited, value=Money(amount=Decimal("999999"), currency="USD"))
+
+    assert scope_violations(expensive) == frozenset()
+
+
+def test_an_action_without_a_value_does_not_engage_the_ceiling(receipt):
+    # A mandate covering both reads and charges legitimately has a limit that
+    # only some of its actions engage.
+    reading = with_action(
+        receipt,
+        type="order.create",
+        target="https://api.example.com/v1/orders",
+        params_hash=PARAMS_HASH,
+        value=None,
+    )
+
+    assert scope_violations(reading) == frozenset()
+
+
+def test_an_action_after_the_mandate_expired_is_reported(receipt):
+    lapsed = with_mandate(receipt, expires_at=receipt.issued_at - timedelta(seconds=1))
+
+    assert scope_violations(lapsed) == {ScopeViolation.MANDATE_EXPIRED}
+
+
+def test_an_action_at_the_instant_the_mandate_expires_is_allowed(receipt):
+    just_in_time = with_mandate(receipt, expires_at=receipt.issued_at)
+
+    assert scope_violations(just_in_time) == frozenset()
+
+
+def test_every_violation_is_reported_not_just_the_first(receipt):
+    wandered = with_action(receipt, type="account.close", value=Money(amount=Decimal("500"), currency="USD"))
+    lapsed = with_mandate(wandered, expires_at=wandered.issued_at - timedelta(days=1))
+
+    assert scope_violations(lapsed) == {
+        ScopeViolation.ACTION_OUTSIDE_SCOPE,
+        ScopeViolation.VALUE_EXCEEDS_LIMIT,
+        ScopeViolation.MANDATE_EXPIRED,
+    }
+
+
+def test_scope_matching_is_exact_not_prefix(receipt):
+    # "payment.charge" must not be satisfied by a scope granting
+    # "payment.charge.refund" or vice versa.
+    narrowed = with_mandate(receipt, scope=("payment.charge.refund",))
+
+    assert scope_violations(narrowed) == {ScopeViolation.ACTION_OUTSIDE_SCOPE}
+
+
+def test_scope_matching_is_case_sensitive(receipt):
+    # Identifiers preserve case throughout the format, so a mandate granting
+    # Payment.Charge does not grant payment.charge.
+    recased = with_mandate(receipt, scope=("Payment.Charge",))
+
+    assert scope_violations(recased) == {ScopeViolation.ACTION_OUTSIDE_SCOPE}
+
+
+def test_every_violation_has_a_description():
+    assert set(VIOLATION_DESCRIPTIONS) == set(ScopeViolation)
+
+
+def test_an_action_inside_its_mandate_was_not_allowed_beyond_it(receipt):
+    assert allowed_beyond_mandate(receipt) is False
+
+
+def test_going_ahead_with_an_out_of_scope_action_is_flagged(receipt):
+    wandered = with_action(receipt, type="account.close")
+
+    assert allowed_beyond_mandate(wandered) is True
+
+
+@pytest.mark.parametrize("outcome", [DecisionOutcome.ALLOW, DecisionOutcome.STEP_UP])
+def test_any_decision_short_of_refusal_counts_as_going_ahead(receipt, outcome):
+    wandered = with_decision(with_action(receipt, type="account.close"), outcome)
+
+    assert allowed_beyond_mandate(wandered) is True
+
+
+def test_refusing_an_out_of_scope_action_is_the_system_working(receipt):
+    # The violation is still reported, but the receipt documents a refusal,
+    # which is a good record rather than a problem.
+    refused = with_decision(with_action(receipt, type="account.close"), DecisionOutcome.DENY)
+
+    assert scope_violations(refused) == {ScopeViolation.ACTION_OUTSIDE_SCOPE}
+    assert allowed_beyond_mandate(refused) is False

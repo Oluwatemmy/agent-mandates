@@ -240,6 +240,63 @@ action's value, and may be in a different currency. Chargeback fees and foreign
 exchange both make those legitimate, and a format that rejected them would be
 wrong about the world rather than strict.
 
+## Checking an action against its mandate
+
+A receipt records both what an agent did and the mandate it claims to have acted
+under. Checking asks whether the first falls inside the second, and reports every
+violation rather than the first.
+
+| Violation | Meaning |
+|---|---|
+| `action_outside_scope` | the action type is not in the mandate's scope |
+| `value_exceeds_limit` | the action's value is above the mandate's limit |
+| `limit_currency_mismatch` | the limit is in another currency, so the value cannot be checked against it |
+| `mandate_expired` | the mandate had expired when the action was taken |
+
+Scope membership is **exact**: a mandate granting `payment.charge.refund` does
+not grant `payment.charge`, and case is significant, consistent with identifiers
+everywhere else in the format.
+
+Boundaries are inclusive. A value exactly at the limit is inside it, and an
+action taken at the instant a mandate expires is in time.
+
+A mandate with no `max_value` places no monetary limit, and an action with no
+`value` does not engage one. Neither is a violation: a mandate covering both
+reads and charges legitimately has a ceiling that only some of its actions meet.
+
+### Currency mismatches fail closed
+
+When the action's value and the mandate's ceiling are in different currencies,
+the check fails. Converting would mean inventing an exchange rate, and passing
+would mean treating an unconstrained currency as constrained. A mandate for
+100 USD says nothing about what may be spent in EUR, so an action denominated in
+EUR is outside it.
+
+### A refused action is not a failure
+
+`action_was_refused` aside, violations describe the action, not the record. A
+receipt whose decision was `deny` documents the system refusing something it
+should have refused: the violations are reported, but the record is a good one.
+
+What matters is a receipt recording that the action went ahead anyway -- a
+decision of `allow` or `step_up` alongside any violation. Only that is treated
+as a failure.
+
+### What this cannot do
+
+These checks validate the record against itself. They do not validate it against
+reality, and they cannot.
+
+A receipt is signed by its agent, and the mandate travels inside that receipt, so
+an agent signs its own account of what it was permitted to do. A dishonest agent
+can simply write a mandate permitting whatever it did, and every check here will
+pass. What is caught is over-reach and mistakes in records that are honestly
+made.
+
+Closing that gap requires the mandate to be attested by the principal granting
+it, independently of the agent using it, so that a verifier can check the
+mandate against its grantor rather than against its user.
+
 ## Versioning
 
 Every document carries `v`. Any change to a field name, type, or canonical rule

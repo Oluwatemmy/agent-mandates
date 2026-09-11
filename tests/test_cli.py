@@ -5,7 +5,12 @@ from pathlib import Path
 import pytest
 from cryptography.hazmat.primitives.asymmetric import ed25519
 
+from datetime import timedelta
+from decimal import Decimal
+
 from agent_receipts.cli import BAD_INPUT, NOT_VERIFIED, VERIFIED, main
+from agent_receipts.models import ActionReceipt, Decision, DecisionOutcome, Money
+from agent_receipts.signing import sign
 from agent_receipts.keys import jwks_from_public_keys
 
 VECTOR_DIR = Path(__file__).parent / "vectors"
@@ -21,6 +26,30 @@ RECEIPT_VECTOR = json.loads(
 OUTCOME_VECTOR = json.loads(
     (VECTOR_DIR / "003-outcome-disputed-with-loss.json").read_text(encoding="utf-8")
 )
+
+
+PRIVATE_KEYS = {
+    key_id: ed25519.Ed25519PrivateKey.from_private_bytes(bytes.fromhex(entry["seed_hex"]))
+    for key_id, entry in KEY_MATERIAL.items()
+}
+
+
+def signed_receipt(path: Path, receipt: ActionReceipt) -> Path:
+    envelope = sign(receipt, "key-1", PRIVATE_KEYS["key-1"])
+    return write_envelope(path, envelope.model_dump(mode="json"))
+
+
+def over_mandate(receipt: ActionReceipt) -> ActionReceipt:
+    return receipt.model_copy(
+        update={
+            "action": receipt.action.model_copy(
+                update={"value": Money(amount=Decimal("500"), currency="USD")}
+            ),
+            "mandate": receipt.mandate.model_copy(
+                update={"expires_at": receipt.issued_at - timedelta(days=1)}
+            ),
+        }
+    )
 
 
 def write_envelope(path: Path, envelope: dict) -> Path:
@@ -209,3 +238,48 @@ def test_names_the_receipt_it_checked_the_binding_against(
 
     out = capsys.readouterr().out
     assert "receipt    rcpt_0123456789abcdef0123456789abcdef signed by key-1" in out
+
+
+def test_a_receipt_within_its_mandate_reports_scope_ok(envelope_file, keys_file, capsys):
+    main(["verify", str(envelope_file), "--keys", str(keys_file)])
+
+    assert "scope      OK" in capsys.readouterr().out
+
+
+def test_going_ahead_beyond_the_mandate_fails_with_every_reason(tmp_path, keys_file, capsys):
+    receipt = ActionReceipt.model_validate(RECEIPT_VECTOR["input"])
+    path = signed_receipt(tmp_path / "over.json", over_mandate(receipt))
+
+    exit_code = main(["verify", str(path), "--keys", str(keys_file)])
+
+    out = capsys.readouterr().out
+    assert exit_code == NOT_VERIFIED
+    assert "scope      EXCEEDED" in out
+    assert "value is above the mandate's limit" in out
+    assert "mandate had expired" in out
+
+
+def test_a_refused_out_of_scope_action_still_verifies(tmp_path, keys_file, capsys):
+    # The receipt documents the system refusing something it should refuse.
+    # That is a good record, not a failed verification.
+    receipt = ActionReceipt.model_validate(RECEIPT_VECTOR["input"])
+    refused = over_mandate(receipt).model_copy(
+        update={"decision": Decision(outcome=DecisionOutcome.DENY)}
+    )
+    path = signed_receipt(tmp_path / "refused.json", refused)
+
+    exit_code = main(["verify", str(path), "--keys", str(keys_file)])
+
+    out = capsys.readouterr().out
+    assert exit_code == VERIFIED
+    assert "EXCEEDED, and refused" in out
+
+
+def test_the_receipt_in_a_pair_is_scope_checked_too(tmp_path, outcome_file, keys_file, capsys):
+    main(["verify", str(outcome_file), "--keys", str(keys_file), "--receipt", str(
+        write_envelope(tmp_path / "receipt.json", RECEIPT_VECTOR["envelope"])
+    )])
+
+    out = capsys.readouterr().out
+    assert "binding    OK" in out
+    assert "scope      OK" in out

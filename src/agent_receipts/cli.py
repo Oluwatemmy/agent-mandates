@@ -20,6 +20,7 @@ from pydantic import ValidationError
 from agent_receipts.binding import PROBLEM_DESCRIPTIONS, binding_problems
 from agent_receipts.keys import read_key_directory
 from agent_receipts.models import ActionReceipt, OutcomeAttestation
+from agent_receipts.scope import VIOLATION_DESCRIPTIONS, allowed_beyond_mandate, scope_violations
 from agent_receipts.signing import SignedEnvelope, verified_signers
 
 VERIFIED = 0
@@ -97,6 +98,12 @@ def _verify(arguments: argparse.Namespace) -> int:
     if receipt is not None:
         failures.extend(_report_binding(receipt, envelope.payload, public_keys))
 
+    checked = envelope.payload if isinstance(envelope.payload, ActionReceipt) else None
+    if checked is None and receipt is not None:
+        checked = receipt.payload
+    if checked is not None:
+        failures.extend(_report_scope(checked))
+
     if failures:
         _line("result", f"NOT VERIFIED ({'; '.join(failures)})")
         return NOT_VERIFIED
@@ -125,6 +132,22 @@ def _report_binding(
         _line("binding", "OK")
 
     return failures
+
+
+def _report_scope(receipt: ActionReceipt) -> list[str]:
+    violations = scope_violations(receipt)
+    if not violations:
+        _line("scope", "OK")
+        return []
+
+    went_ahead = allowed_beyond_mandate(receipt)
+    _line("scope", "EXCEEDED" if went_ahead else "EXCEEDED, and refused")
+    for violation in sorted(violations):
+        _line("", f"- {VIOLATION_DESCRIPTIONS[violation]}")
+
+    # A refused action that fell outside its mandate is the system working, and
+    # the receipt documenting it is a good record rather than a failure.
+    return ["the action went beyond its mandate"] if went_ahead else []
 
 
 def _read_envelope(path: Path) -> SignedEnvelope:

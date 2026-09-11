@@ -30,7 +30,7 @@ implementation can reproduce the same signature bytes.
 - [x] Ed25519 signing and verification
 - [x] Verifier CLI
 - [x] Outcome binding
-- [ ] Mandate scope checking
+- [x] Mandate scope checking
 - [ ] Delegation chains
 
 ## Verifying
