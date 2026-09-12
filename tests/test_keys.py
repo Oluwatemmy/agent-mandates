@@ -3,7 +3,7 @@ import json
 import pytest
 from cryptography.hazmat.primitives.asymmetric import ed25519
 
-from agent_receipts.keys import jwks_from_public_keys, public_keys_from_jwks, read_key_directory
+from agent_mandates.keys import jwks_from_public_keys, public_keys_from_jwks, read_key_directory
 
 SIGNING_KEY = ed25519.Ed25519PrivateKey.from_private_bytes(bytes(range(32)))
 PUBLIC_KEY = SIGNING_KEY.public_key()

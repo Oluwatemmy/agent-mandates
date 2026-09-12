@@ -10,8 +10,8 @@ from pathlib import Path
 
 import pytest
 
-from agent_receipts.cli import VERIFIED
-from agent_receipts.cli import main as verify
+from agent_mandates.cli import VERIFIED
+from agent_mandates.cli import main as verify
 
 EXAMPLES = Path(__file__).parent.parent / "examples"
 sys.path.insert(0, str(EXAMPLES))

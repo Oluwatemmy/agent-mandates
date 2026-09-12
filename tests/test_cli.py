@@ -6,11 +6,11 @@ from pathlib import Path
 
 import pytest
 
-from agent_receipts.binding import mandate_digest
-from agent_receipts.cli import BAD_INPUT, NOT_VERIFIED, VERIFIED, main
-from agent_receipts.keys import jwks_from_public_keys
-from agent_receipts.models import ActionReceipt, Decision, DecisionOutcome, Mandate, Money
-from agent_receipts.signing import sign
+from agent_mandates.binding import mandate_digest
+from agent_mandates.cli import BAD_INPUT, NOT_VERIFIED, VERIFIED, main
+from agent_mandates.keys import jwks_from_public_keys
+from agent_mandates.models import ActionReceipt, Decision, DecisionOutcome, Mandate, Money
+from agent_mandates.signing import sign
 from support import (
     DELEGATED_RECEIPT_VECTOR,
     DELEGATED_VECTOR,

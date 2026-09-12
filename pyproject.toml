@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "agent-receipts"
+name = "agent-mandates"
 version = "0.3.0"
 description = "Signed, independently verifiable records of what an AI agent did and what happened as a result."
 requires-python = ">=3.11"
@@ -25,12 +25,12 @@ dev = [
 ]
 
 [project.scripts]
-receipts = "agent_receipts.cli:main"
+mandates = "agent_mandates.cli:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/agent_receipts"]
+packages = ["src/agent_mandates"]
 # Ships py.typed so the annotations are visible to consumers type checkers.
-artifacts = ["src/agent_receipts/py.typed"]
+artifacts = ["src/agent_mandates/py.typed"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-from agent_receipts.canonical import canonical_json_value
+from agent_mandates.canonical import canonical_json_value
 from support import DOCUMENT_TYPES, VECTOR_PATHS
 
 

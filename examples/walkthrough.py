@@ -3,7 +3,7 @@
 Run it with an output directory:
 
     python examples/walkthrough.py ./out
-    receipts verify ./out/outcome.json --keys ./out/jwks.json \\
+    mandates verify ./out/outcome.json --keys ./out/jwks.json \\
         --receipt ./out/receipt.json --mandate ./out/mandate.json
 
 The test suite runs this file, so it cannot drift from the library.
@@ -17,9 +17,9 @@ from pathlib import Path
 
 from cryptography.hazmat.primitives.asymmetric import ed25519
 
-from agent_receipts.binding import outcome_for, receipt_under
-from agent_receipts.keys import jwks_from_public_keys
-from agent_receipts.models import (
+from agent_mandates.binding import outcome_for, receipt_under
+from agent_mandates.keys import jwks_from_public_keys
+from agent_mandates.models import (
     Action,
     Agent,
     Decision,
@@ -31,7 +31,7 @@ from agent_receipts.models import (
     PrincipalType,
     new_mandate_id,
 )
-from agent_receipts.signing import sign
+from agent_mandates.signing import sign
 
 
 def main(destination: Path) -> None:

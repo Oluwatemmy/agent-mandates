@@ -10,7 +10,7 @@ from pathlib import Path
 
 from cryptography.hazmat.primitives.asymmetric import ed25519
 
-from agent_receipts.models import ActionReceipt, Mandate, OutcomeAttestation
+from agent_mandates.models import ActionReceipt, Mandate, OutcomeAttestation
 
 VECTOR_DIR = Path(__file__).parent / "vectors"
 VECTOR_PATHS = sorted(VECTOR_DIR.glob("[0-9]*.json"))

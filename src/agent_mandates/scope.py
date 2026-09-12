@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from enum import StrEnum
 
-from agent_receipts.models import ActionReceipt, DecisionOutcome, Mandate
+from agent_mandates.models import ActionReceipt, DecisionOutcome, Mandate
 
 
 class ScopeViolation(StrEnum):

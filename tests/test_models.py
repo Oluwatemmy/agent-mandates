@@ -4,7 +4,7 @@ from decimal import Decimal
 import pytest
 from pydantic import ValidationError
 
-from agent_receipts.models import (
+from agent_mandates.models import (
     Action,
     ActionReceipt,
     Agent,

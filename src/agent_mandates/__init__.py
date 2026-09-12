@@ -1,4 +1,4 @@
-from agent_receipts.models import (
+from agent_mandates.models import (
     Action,
     ActionReceipt,
     Agent,

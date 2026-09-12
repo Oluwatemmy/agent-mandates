@@ -27,8 +27,8 @@ from pydantic import (
     model_validator,
 )
 
-from agent_receipts.canonical import SignedDocument, canonical_bytes
-from agent_receipts.models import ActionReceipt, Identifier, Mandate, OutcomeAttestation
+from agent_mandates.canonical import SignedDocument, canonical_bytes
+from agent_mandates.models import ActionReceipt, Identifier, Mandate, OutcomeAttestation
 
 ED25519_SIGNATURE_SIZE = 64
 SIGNATURE_TEXT_LENGTH = 86  # 64 bytes as unpadded base64url

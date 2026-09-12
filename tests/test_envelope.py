@@ -15,8 +15,8 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric import ed25519
 from pydantic import ValidationError
 
-from agent_receipts.canonical import canonical_bytes
-from agent_receipts.signing import SignedEnvelope, add_signature, sign, verified_signers
+from agent_mandates.canonical import canonical_bytes
+from agent_mandates.signing import SignedEnvelope, add_signature, sign, verified_signers
 from support import MANDATE_VECTOR, PRIVATE_KEYS, PUBLIC_KEYS, VECTOR_PATHS, document
 
 ATTACKER_KEY = ed25519.Ed25519PrivateKey.from_private_bytes(bytes([0xFF] * 32))

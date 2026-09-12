@@ -19,21 +19,21 @@ from typing import TYPE_CHECKING
 
 from pydantic import ValidationError
 
-from agent_receipts.binding import (
+from agent_mandates.binding import (
     MANDATE_PROBLEM_DESCRIPTIONS,
     PROBLEM_DESCRIPTIONS,
     binding_problems,
     mandate_problems,
 )
-from agent_receipts.delegation import (
+from agent_mandates.delegation import (
     DELEGATION_PROBLEM_DESCRIPTIONS,
     accountable_principal,
     chain_problems,
 )
-from agent_receipts.keys import read_key_directory
-from agent_receipts.models import ActionReceipt, Mandate, Money, OutcomeAttestation
-from agent_receipts.scope import VIOLATION_DESCRIPTIONS, allowed_beyond_mandate, scope_violations
-from agent_receipts.signing import SignedEnvelope, verified_signers
+from agent_mandates.keys import read_key_directory
+from agent_mandates.models import ActionReceipt, Mandate, Money, OutcomeAttestation
+from agent_mandates.scope import VIOLATION_DESCRIPTIONS, allowed_beyond_mandate, scope_violations
+from agent_mandates.signing import SignedEnvelope, verified_signers
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -62,7 +62,7 @@ def main(argv: list[str] | None = None) -> int:
             stream.reconfigure(errors="replace")
 
     parser = argparse.ArgumentParser(
-        prog="receipts", description="Verify signed agent action receipts and outcome attestations."
+        prog="mandates", description="Verify signed agent action receipts and outcome attestations."
     )
     commands = parser.add_subparsers(dest="command", required=True)
 

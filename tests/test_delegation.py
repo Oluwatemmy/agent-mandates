@@ -9,8 +9,8 @@ from decimal import Decimal
 
 import pytest
 
-from agent_receipts.binding import mandate_digest
-from agent_receipts.delegation import (
+from agent_mandates.binding import mandate_digest
+from agent_mandates.delegation import (
     DELEGATION_PROBLEM_DESCRIPTIONS,
     MAX_CHAIN_DEPTH,
     DelegationProblem,
@@ -19,7 +19,7 @@ from agent_receipts.delegation import (
     delegate,
     delegation_problems,
 )
-from agent_receipts.models import (
+from agent_mandates.models import (
     Agent,
     Mandate,
     Money,

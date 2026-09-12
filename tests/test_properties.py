@@ -15,10 +15,10 @@ from hypothesis import HealthCheck, assume, given, settings
 from hypothesis import strategies as st
 from pydantic import ValidationError
 
-from agent_receipts.binding import binding_problems, mandate_digest, outcome_for
-from agent_receipts.canonical import canonical_bytes, canonical_json_bytes, canonical_json_value
-from agent_receipts.delegation import DelegationProblem, delegation_problems
-from agent_receipts.models import (
+from agent_mandates.binding import binding_problems, mandate_digest, outcome_for
+from agent_mandates.canonical import canonical_bytes, canonical_json_bytes, canonical_json_value
+from agent_mandates.delegation import DelegationProblem, delegation_problems
+from agent_mandates.models import (
     ActionReceipt,
     Agent,
     DecisionOutcome,
@@ -27,7 +27,7 @@ from agent_receipts.models import (
     OutcomeAttestation,
     OutcomeStatus,
 )
-from agent_receipts.signing import SignedEnvelope, decode_signature, sign, verified_signers
+from agent_mandates.signing import SignedEnvelope, decode_signature, sign, verified_signers
 from strategies import documents, json_values, mandates, outcomes, receipts
 
 WIDENING = {

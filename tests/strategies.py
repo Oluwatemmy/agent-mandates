@@ -11,7 +11,7 @@ from decimal import Decimal
 
 from hypothesis import strategies as st
 
-from agent_receipts.models import (
+from agent_mandates.models import (
     Action,
     ActionReceipt,
     Agent,

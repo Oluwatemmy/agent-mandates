@@ -12,10 +12,10 @@ from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 from pydantic import ValidationError
 
-from agent_receipts.canonical import MAX_DEPTH, canonical_json_bytes
-from agent_receipts.cli import BAD_INPUT, main
-from agent_receipts.keys import public_keys_from_jwks
-from agent_receipts.signing import SignedEnvelope
+from agent_mandates.canonical import MAX_DEPTH, canonical_json_bytes
+from agent_mandates.cli import BAD_INPUT, main
+from agent_mandates.keys import public_keys_from_jwks
+from agent_mandates.signing import SignedEnvelope
 from support import MANDATE_VECTOR, RECEIPT_VECTOR
 
 FUZZ = settings(max_examples=200, suppress_health_check=[HealthCheck.too_slow], deadline=None)

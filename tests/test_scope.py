@@ -5,8 +5,8 @@ from decimal import Decimal
 
 import pytest
 
-from agent_receipts.models import ActionReceipt, Decision, DecisionOutcome, Mandate, Money
-from agent_receipts.scope import (
+from agent_mandates.models import ActionReceipt, Decision, DecisionOutcome, Mandate, Money
+from agent_mandates.scope import (
     VIOLATION_DESCRIPTIONS,
     ScopeViolation,
     allowed_beyond_mandate,

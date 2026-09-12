@@ -1,33 +1,29 @@
-# agent-receipts
+# agent-mandates
 
-Signed, independently verifiable records of what an AI agent did and what
-happened as a result.
+Who authorized an AI agent to do something, whether it stayed inside those
+bounds, and what it cost when it did not.
 
-Three linked documents:
+Three linked documents, each signed by the party actually making the claim:
 
 - **Mandate** — signed by a principal, granting one named agent a scope, a
-  ceiling and an expiry.
+  ceiling and an expiry. An agent can pass authority on, but only narrowed:
+  a delegated grant can never widen what it received.
 - **Action receipt** — signed by the agent when it acts, bound by hash to the
   mandate it acted under.
 - **Outcome attestation** — signed later and bound by hash to that receipt.
   What actually happened: completed, disputed, refunded, reversed, and any loss.
 
-Each is signed by the party making the claim, so a verifier checks a grant
-against whoever granted it rather than whoever used it.
-
-Verification requires only the issuer's public key. It never requires access to
-the issuer's systems.
+Because a grant is signed by whoever granted it rather than whoever used it, a
+verifier can check an agent's authority against its principal instead of taking
+the agent's word for it. Verification needs only the public keys, never access
+to the issuer.
 
 ## Status
 
-Documents can be signed and independently verified today. What remains is the
-work that makes a receipt mean something beyond "this was signed": binding an
-outcome to its receipt, checking an action against its mandate, and walking
-delegation chains.
-
-The wire format is specified in [FORMAT.md](FORMAT.md) and pinned by golden
-vectors in `tests/vectors/`, which carry fixed key seeds so another
-implementation can reproduce the same signature bytes.
+Format version 0.3, not yet published. The wire format is specified in
+[FORMAT.md](FORMAT.md) and pinned by golden vectors in `tests/vectors/`, which
+carry fixed key seeds so another implementation can reproduce the same
+signature bytes.
 
 - [x] Document format
 - [x] Canonical values and canonical JSON
@@ -82,7 +78,7 @@ envelope = sign(mandate, "alice", alice_key)
 Then anyone holding the published keys can check the whole chain:
 
 ```
-$ receipts verify outcome.json --keys jwks.json       --receipt receipt.json --mandate mandate.json
+$ mandates verify outcome.json --keys jwks.json       --receipt receipt.json --mandate mandate.json
 
 document   outc_70744f1f3219436cb220f281817fee60 (outcome attestation)
 status     completed
@@ -97,7 +93,7 @@ result     VERIFIED
 
 ## Verifying
 
-    receipts verify envelope.json --keys jwks.json
+    mandates verify envelope.json --keys jwks.json
 
 Prints what the document claims and which keys signed it, then VERIFIED or
 NOT VERIFIED. Exit codes are 0 verified, 1 not verified, 2 bad input, so the
@@ -107,12 +103,12 @@ Use `--require KEY_ID` (repeatable) to fail unless a particular key signed.
 
 To check a whole chain, pass the documents it rests on:
 
-    receipts verify outcome.json --keys jwks.json         --receipt receipt.json --mandate mandate.json
+    mandates verify outcome.json --keys jwks.json         --receipt receipt.json --mandate mandate.json
 
 Repeat `--mandate`, root first, to check a delegation chain. Each grant must
 narrow what it received, and the chain must lead back to one principal:
 
-    receipts verify receipt.json --keys jwks.json         --mandate root-grant.json --mandate sub-grant.json
+    mandates verify receipt.json --keys jwks.json         --mandate root-grant.json --mandate sub-grant.json
 
 Verification needs only the public key directory, never access to the issuer.
 

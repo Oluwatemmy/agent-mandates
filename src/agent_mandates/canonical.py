@@ -14,7 +14,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from agent_receipts.models import ActionReceipt, Mandate, OutcomeAttestation
+from agent_mandates.models import ActionReceipt, Mandate, OutcomeAttestation
 
 SignedDocument = ActionReceipt | OutcomeAttestation | Mandate
 

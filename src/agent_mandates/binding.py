@@ -26,8 +26,8 @@ import hashlib
 from datetime import datetime
 from enum import StrEnum
 
-from agent_receipts.canonical import canonical_bytes
-from agent_receipts.models import (
+from agent_mandates.canonical import canonical_bytes
+from agent_mandates.models import (
     Action,
     ActionReceipt,
     Decision,

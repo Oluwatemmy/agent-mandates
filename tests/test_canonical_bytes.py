@@ -13,7 +13,7 @@ import json
 import pytest
 import rfc8785
 
-from agent_receipts.canonical import canonical_bytes, canonical_json_bytes
+from agent_mandates.canonical import canonical_bytes, canonical_json_bytes
 from support import DOCUMENT_TYPES, VECTOR_PATHS
 
 BACKSLASH = chr(0x5C)

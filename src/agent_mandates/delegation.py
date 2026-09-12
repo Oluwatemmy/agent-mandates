@@ -22,8 +22,8 @@ from datetime import datetime
 from enum import StrEnum
 from itertools import pairwise
 
-from agent_receipts.binding import mandate_digest
-from agent_receipts.models import Agent, DelegationLink, Mandate, Money, Principal, new_mandate_id
+from agent_mandates.binding import mandate_digest
+from agent_mandates.models import Agent, DelegationLink, Mandate, Money, Principal, new_mandate_id
 
 # A verifier walks a chain link by link, so an unbounded one is work an attacker
 # can hand it for free. Eight is far past any plausible real delegation depth.

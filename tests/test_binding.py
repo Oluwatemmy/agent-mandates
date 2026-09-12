@@ -11,7 +11,7 @@ from decimal import Decimal
 
 import pytest
 
-from agent_receipts.binding import (
+from agent_mandates.binding import (
     MANDATE_PROBLEM_DESCRIPTIONS,
     PROBLEM_DESCRIPTIONS,
     BindingProblem,
@@ -22,7 +22,7 @@ from agent_receipts.binding import (
     outcome_for,
     receipt_digest,
 )
-from agent_receipts.models import (
+from agent_mandates.models import (
     ActionReceipt,
     Agent,
     Decision,
@@ -248,8 +248,8 @@ def test_every_mandate_problem_has_a_description():
 
 
 def test_receipt_under_binds_to_the_grant_it_was_taken_under(mandate):
-    from agent_receipts.binding import receipt_under
-    from agent_receipts.models import Action, Decision, DecisionOutcome
+    from agent_mandates.binding import receipt_under
+    from agent_mandates.models import Action, Decision, DecisionOutcome
 
     recorded = receipt_under(
         mandate,
