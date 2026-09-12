@@ -14,7 +14,7 @@
       "key_id": "principal-key"
     },
     "mandate_id": "mndt_bbbb2222cccc3333dddd4444eeee5555",
-    "mandate_hash": "sha256:cc1497ca15b191671e0645e49580a50ee37d3900d80a7006cbe50b632e95f55a",
+    "mandate_hash": "sha256:5548b1af6eb14f1fbd62e10d2e59ce19d12f847ebf1e1eb9a295b46fbce39bcf",
     "action": {
       "type": "payment.charge",
       "target": "https://api.example.com/v1/orders",
@@ -29,7 +29,7 @@
     }
   },
   "canonical": {
-    "v": "0.3",
+    "v": "0.1",
     "type": "action",
     "id": "rcpt_99998888777766665555444433332222",
     "issued_at": "2026-09-09T11:30:00.000Z",
@@ -43,7 +43,7 @@
       "key_id": "principal-key"
     },
     "mandate_id": "mndt_bbbb2222cccc3333dddd4444eeee5555",
-    "mandate_hash": "sha256:cc1497ca15b191671e0645e49580a50ee37d3900d80a7006cbe50b632e95f55a",
+    "mandate_hash": "sha256:5548b1af6eb14f1fbd62e10d2e59ce19d12f847ebf1e1eb9a295b46fbce39bcf",
     "action": {
       "type": "payment.charge",
       "target": "https://api.example.com/v1/orders",
@@ -58,10 +58,10 @@
       "reasons": []
     }
   },
-  "canonical_bytes_sha256": "3f53652001952397ce219d51d3737cba7ddd527b9675b396755179b10fa46b9a",
+  "canonical_bytes_sha256": "5b13c4ed1425d5f1a454c3fd068738807abb411e662750bdbf07f2c5e8b9757f",
   "envelope": {
     "payload": {
-      "v": "0.3",
+      "v": "0.1",
       "type": "action",
       "id": "rcpt_99998888777766665555444433332222",
       "issued_at": "2026-09-09T11:30:00.000Z",
@@ -75,7 +75,7 @@
         "key_id": "principal-key"
       },
       "mandate_id": "mndt_bbbb2222cccc3333dddd4444eeee5555",
-      "mandate_hash": "sha256:cc1497ca15b191671e0645e49580a50ee37d3900d80a7006cbe50b632e95f55a",
+      "mandate_hash": "sha256:5548b1af6eb14f1fbd62e10d2e59ce19d12f847ebf1e1eb9a295b46fbce39bcf",
       "action": {
         "type": "payment.charge",
         "target": "https://api.example.com/v1/orders",
@@ -94,7 +94,7 @@
       {
         "alg": "Ed25519",
         "key_id": "key-2",
-        "value": "tcQ-9gKreg6h2FVfM5PjkAI3FaCFoFGR3fdZJ4jq9wazwHP87VouUQVwNl_iXLGLCLwJh10uE-HmfFIEoadQBQ"
+        "value": "yBIOxUTisddlD19ei62S1LnlNBe4mAkfQP5j7Ox_sehx9WW5owelPwnIitwnp1r6hx9Ej48CQFNMe83P6FbhAw"
       }
     ]
   }

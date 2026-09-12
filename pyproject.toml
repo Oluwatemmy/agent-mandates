@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "agent-mandates"
-version = "0.3.0"
+version = "0.1.0"
 description = "Who authorized an AI agent to act, whether it stayed inside those bounds, and what it cost when it did not."
 readme = "README.md"
 keywords = [

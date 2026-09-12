@@ -20,7 +20,7 @@ to the issuer.
 
 ## Status
 
-Format version 0.3, not yet published. The wire format is specified in
+Format version 0.1, not yet published. The wire format is specified in
 [FORMAT.md](FORMAT.md) and pinned by golden vectors in `tests/vectors/`, which
 carry fixed key seeds so another implementation can reproduce the same
 signature bytes.

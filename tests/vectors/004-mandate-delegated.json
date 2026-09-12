@@ -23,7 +23,7 @@
     },
     "delegated_from": {
       "mandate_id": "mndt_aaaa1111bbbb2222cccc3333dddd4444",
-      "mandate_hash": "sha256:1094a92bbace49279a4d481cf60edbdef8bd9c9d2606a7063596a7e871451384",
+      "mandate_hash": "sha256:8f2d922be6cc3f24f1f2168140a36fe043ed52539e8343e3aefe106a0a6b01d2",
       "agent": {
         "id": "agent:cafe\u0301-bot",
         "key_id": "key-1"
@@ -31,7 +31,7 @@
     }
   },
   "canonical": {
-    "v": "0.3",
+    "v": "0.1",
     "type": "mandate",
     "id": "mndt_bbbb2222cccc3333dddd4444eeee5555",
     "issued_at": "2026-09-09T09:00:00.000Z",
@@ -54,17 +54,17 @@
     },
     "delegated_from": {
       "mandate_id": "mndt_aaaa1111bbbb2222cccc3333dddd4444",
-      "mandate_hash": "sha256:1094a92bbace49279a4d481cf60edbdef8bd9c9d2606a7063596a7e871451384",
+      "mandate_hash": "sha256:8f2d922be6cc3f24f1f2168140a36fe043ed52539e8343e3aefe106a0a6b01d2",
       "agent": {
         "id": "agent:caf\u00e9-bot",
         "key_id": "key-1"
       }
     }
   },
-  "canonical_bytes_sha256": "cc1497ca15b191671e0645e49580a50ee37d3900d80a7006cbe50b632e95f55a",
+  "canonical_bytes_sha256": "5548b1af6eb14f1fbd62e10d2e59ce19d12f847ebf1e1eb9a295b46fbce39bcf",
   "envelope": {
     "payload": {
-      "v": "0.3",
+      "v": "0.1",
       "type": "mandate",
       "id": "mndt_bbbb2222cccc3333dddd4444eeee5555",
       "issued_at": "2026-09-09T09:00:00.000Z",
@@ -87,7 +87,7 @@
       },
       "delegated_from": {
         "mandate_id": "mndt_aaaa1111bbbb2222cccc3333dddd4444",
-        "mandate_hash": "sha256:1094a92bbace49279a4d481cf60edbdef8bd9c9d2606a7063596a7e871451384",
+        "mandate_hash": "sha256:8f2d922be6cc3f24f1f2168140a36fe043ed52539e8343e3aefe106a0a6b01d2",
         "agent": {
           "id": "agent:caf\u00e9-bot",
           "key_id": "key-1"
@@ -98,7 +98,7 @@
       {
         "alg": "Ed25519",
         "key_id": "key-1",
-        "value": "NVPQRh5p45dsszYtd4keNSx2ueJyw-VwI1naAbNJvFOTM2I0Aj9euc894OCp-HENBaLcNZLcSn7bxR4z1Ju6Dg"
+        "value": "_taSrAAbJp5ZsahMfRvPGj9t5CY-JNlpYIRdhBSqy92lc4ZtzW9gJJHHWhaIKDqzJ98Hn6OIHMqWh-7Lyp73Bg"
       }
     ]
   }

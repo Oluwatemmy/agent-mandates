@@ -4,27 +4,27 @@
   "input": {
     "id": "outc_fedcba9876543210fedcba9876543210",
     "receipt_id": "rcpt_0123456789abcdef0123456789abcdef",
-    "receipt_hash": "sha256:d4232c5d4e992675561e0ff95d229365b305620ea7b74c01b01726efbf0c7068",
+    "receipt_hash": "sha256:eabcb0cf52fca4b60b6ec7d446ebef72cb6ca07c17b8cc4f82f5f0d48489fa99",
     "issued_at": "2026-09-23T09:11:02Z",
     "status": "completed"
   },
   "canonical": {
-    "v": "0.3",
+    "v": "0.1",
     "type": "outcome",
     "id": "outc_fedcba9876543210fedcba9876543210",
     "receipt_id": "rcpt_0123456789abcdef0123456789abcdef",
-    "receipt_hash": "sha256:d4232c5d4e992675561e0ff95d229365b305620ea7b74c01b01726efbf0c7068",
+    "receipt_hash": "sha256:eabcb0cf52fca4b60b6ec7d446ebef72cb6ca07c17b8cc4f82f5f0d48489fa99",
     "issued_at": "2026-09-23T09:11:02.000Z",
     "status": "completed"
   },
-  "canonical_bytes_sha256": "0c01fb61e46c16ba117500cfaf7a0c95d37787cd7e25df1d55fb0c875210a767",
+  "canonical_bytes_sha256": "be95779edb08b14008ad750b89d111e7d6eb97bc028363024f0c25d5e18f36c0",
   "envelope": {
     "payload": {
-      "v": "0.3",
+      "v": "0.1",
       "type": "outcome",
       "id": "outc_fedcba9876543210fedcba9876543210",
       "receipt_id": "rcpt_0123456789abcdef0123456789abcdef",
-      "receipt_hash": "sha256:d4232c5d4e992675561e0ff95d229365b305620ea7b74c01b01726efbf0c7068",
+      "receipt_hash": "sha256:eabcb0cf52fca4b60b6ec7d446ebef72cb6ca07c17b8cc4f82f5f0d48489fa99",
       "issued_at": "2026-09-23T09:11:02.000Z",
       "status": "completed"
     },
@@ -32,7 +32,7 @@
       {
         "alg": "Ed25519",
         "key_id": "merchant-key",
-        "value": "45ZWuMt4_GgDrwcsYAJH90XStk3o9T20QUEXzr3XYMG2HyKvHQY4BZ-O9CZL3_1iqvQU1ZiBNSzhfYg-BEygCw"
+        "value": "4g-k1S2f-EIH4SZQo1Uouk-Q8KHvQ0aPZ5z1kSDvLHxWTIoYsAo8cB9fi9fF-fmHzRJDGTjNuDrbtXKfps_pBg"
       }
     ]
   }

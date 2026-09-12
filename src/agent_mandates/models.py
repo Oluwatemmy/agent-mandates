@@ -215,7 +215,7 @@ class Mandate(BaseModel):
 
     model_config = SIGNED_DOCUMENT
 
-    v: Literal["0.3"] = "0.3"
+    v: Literal["0.1"] = "0.1"
     type: Literal["mandate"] = "mandate"
     id: MandateId
     issued_at: UtcTimestamp
@@ -258,7 +258,7 @@ class ActionReceipt(BaseModel):
 
     model_config = SIGNED_DOCUMENT
 
-    v: Literal["0.3"] = "0.3"
+    v: Literal["0.1"] = "0.1"
     type: Literal["action"] = "action"
     id: ReceiptId
     issued_at: UtcTimestamp
@@ -282,7 +282,7 @@ class OutcomeAttestation(BaseModel):
 
     model_config = SIGNED_DOCUMENT
 
-    v: Literal["0.3"] = "0.3"
+    v: Literal["0.1"] = "0.1"
     type: Literal["outcome"] = "outcome"
     id: OutcomeId
     receipt_id: ReceiptId

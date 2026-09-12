@@ -420,6 +420,11 @@ Every document carries `v`. Any change to a field name, type, or canonical rule
 in this file is a new version. Documents signed under an earlier version remain
 verifiable under the rules of that version.
 
-The format version and the package version are different things. They happen to
-move together before 1.0, but a library release that fixes a bug without
-touching the wire format does not change `v`, and must not.
+The format version and the package version are different things and do not
+track each other. A library release that fixes a bug without touching the wire
+format does not change `v`, and must not; equally, a format change does not
+require the package version to move in step.
+
+Both start at 0.1 because nothing had been published before then. Versions
+identify which rules a verifier should apply, and there is nothing to
+disambiguate until documents exist outside this repository.
