@@ -1,47 +1,37 @@
 # agent-mandates
 
+[![PyPI](https://img.shields.io/pypi/v/agent-mandates)](https://pypi.org/project/agent-mandates/)
+[![CI](https://github.com/Oluwatemmy/agent-mandates/actions/workflows/ci.yml/badge.svg)](https://github.com/Oluwatemmy/agent-mandates/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/pypi/pyversions/agent-mandates)](https://pypi.org/project/agent-mandates/)
+[![License](https://img.shields.io/pypi/l/agent-mandates)](LICENSE)
+
 Who authorized an AI agent to do something, whether it stayed inside those
 bounds, and what it cost when it did not.
 
 Three linked documents, each signed by the party actually making the claim:
 
 - **Mandate** — signed by a principal, granting one named agent a scope, a
-  ceiling and an expiry. An agent can pass authority on, but only narrowed:
-  a delegated grant can never widen what it received.
+  ceiling and an expiry. An agent may pass authority on, but only narrowed: a
+  delegated grant can never widen what it received.
 - **Action receipt** — signed by the agent when it acts, bound by hash to the
   mandate it acted under.
 - **Outcome attestation** — signed later and bound by hash to that receipt.
   What actually happened: completed, disputed, refunded, reversed, and any loss.
 
 Because a grant is signed by whoever granted it rather than whoever used it, a
-verifier can check an agent's authority against its principal instead of taking
-the agent's word for it. Verification needs only the public keys, never access
-to the issuer.
+verifier checks an agent's authority against its principal instead of taking the
+agent's word for it. Verification needs only the published public keys, never
+access to the issuer.
 
-## Status
+## Install
 
-Format version 0.1, not yet published. The wire format is specified in
-[FORMAT.md](FORMAT.md) and pinned by golden vectors in `tests/vectors/`, which
-carry fixed key seeds so another implementation can reproduce the same
-signature bytes.
+```sh
+pip install agent-mandates
+```
 
-- [x] Document format
-- [x] Canonical values and canonical JSON
-- [x] Canonical bytes (RFC 8785)
-- [x] Ed25519 signing and verification
-- [x] Verifier CLI
-- [x] Outcome binding
-- [x] Mandate scope checking
-- [x] Principal-signed mandates
-- [x] Delegation chains
-- [x] Hardening: CI matrix, property-based tests, parser fuzzing
-- [ ] Publish to PyPI
+Python 3.11+. Depends on `pydantic` and `cryptography`, nothing else.
 
-## A whole transaction
-
-[`examples/walkthrough.py`](examples/walkthrough.py) issues a grant, records an
-action under it, attests the outcome and publishes the public keys. The test
-suite runs that file, so it cannot drift from the library.
+## Issue a grant, act under it, attest the outcome
 
 ```python
 # Alice grants her shopping agent authority to charge up to 200 USD.
@@ -55,7 +45,7 @@ mandate = Mandate(
     max_value=Money(amount=Decimal("200.00"), currency="USD"),
 )
 
-# The agent charges 79.99. receipt_under commits to the grant, so the
+# The agent charges 79.99. receipt_under commits to the grant by hash, so the
 # binding cannot be mistyped.
 receipt = receipt_under(
     mandate,
@@ -70,15 +60,23 @@ receipt = receipt_under(
 )
 
 # Two days later the merchant attests what happened.
-outcome = outcome_for(receipt, status=OutcomeStatus.COMPLETED, issued_at=now + timedelta(days=2))
+outcome = outcome_for(
+    receipt, status=OutcomeStatus.COMPLETED, issued_at=now + timedelta(days=2)
+)
 
 envelope = sign(mandate, "alice", alice_key)
 ```
 
-Then anyone holding the published keys can check the whole chain:
+[`examples/walkthrough.py`](examples/walkthrough.py) is the whole flow, runnable.
+The test suite executes it, so it cannot drift from the library.
 
-```
-$ mandates verify outcome.json --keys jwks.json       --receipt receipt.json --mandate mandate.json
+## Verify
+
+Anyone holding the published keys can check the chain:
+
+```console
+$ mandates verify outcome.json --keys jwks.json \
+      --receipt receipt.json --mandate mandate.json
 
 document   outc_70744f1f3219436cb220f281817fee60 (outcome attestation)
 status     completed
@@ -91,36 +89,45 @@ scope      OK
 result     VERIFIED
 ```
 
-## Verifying
+Exit codes are `0` verified, `1` not verified, `2` bad input, so the three cases
+can be told apart in a script. `--require KEY_ID` fails unless a particular key
+signed. Repeat `--mandate`, root first, to check a delegation chain.
 
-    mandates verify envelope.json --keys jwks.json
+## What it does not do
 
-Prints what the document claims and which keys signed it, then VERIFIED or
-NOT VERIFIED. Exit codes are 0 verified, 1 not verified, 2 bad input, so the
-three cases can be told apart in a script.
+**It verifies documents, not the world they describe.** An agent signs its own
+account of what it did, and nothing here compares that account to reality. A
+receipt saying an agent charged 79.99 is evidence that the agent *claimed* that,
+under authority its principal *did* grant. It is not evidence the charge
+happened.
 
-Use `--require KEY_ID` (repeatable) to fail unless a particular key signed.
+Key management is deliberately out of scope: generating, storing, rotating and
+revoking private keys is left to you.
 
-To check a whole chain, pass the documents it rests on:
+## The format
 
-    mandates verify outcome.json --keys jwks.json         --receipt receipt.json --mandate mandate.json
+The wire format is specified in [FORMAT.md](FORMAT.md) — canonicalization,
+signing boundary, binding, attenuation — and pinned by golden vectors in
+[`tests/vectors/`](tests/vectors), which carry fixed key seeds so an
+implementation in another language can reproduce the same signature bytes.
 
-Repeat `--mandate`, root first, to check a delegation chain. Each grant must
-narrow what it received, and the chain must lead back to one principal:
-
-    mandates verify receipt.json --keys jwks.json         --mandate root-grant.json --mandate sub-grant.json
-
-Verification needs only the public key directory, never access to the issuer.
+Verified on Linux, macOS and Windows across Python 3.11, 3.12 and 3.13, which
+ship different Unicode tables and must still agree on canonical bytes.
 
 ## Development
 
-    python -m pip install -e ".[dev]"
-    python -m pytest
+```sh
+python -m pip install -e ".[dev]"
+python -m pytest
+```
+
+Contributions welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). Security
+reports: [SECURITY.md](SECURITY.md).
 
 ## License
 
 Copyright 2026 Ajayi Oluwaseyi Temitope.
 
-Licensed under the Apache License, Version 2.0. Apache-2.0 rather than MIT for
-its explicit patent grant: this format is meant to be implemented by other
-parties, who need assurance that no patent claim will be asserted over it later.
+Apache-2.0 rather than MIT for its explicit patent grant: this format is meant
+to be implemented by other parties, who need assurance that no patent claim will
+be asserted over it later.
