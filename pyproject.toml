@@ -60,7 +60,7 @@ mandates = "agent_mandates.cli:main"
 [tool.hatch.build.targets.sdist]
 # Tests and vectors ship so a downstream packager can verify the release;
 # the Hypothesis example database is machine-local noise.
-exclude = [".hypothesis", ".venv"]
+exclude = [".hypothesis", ".venv", "SENIOR_BACKEND_ENGINEERING.md"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/agent_mandates"]

@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+import unicodedata
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -33,7 +34,12 @@ from agent_mandates.delegation import (
 from agent_mandates.keys import read_key_directory
 from agent_mandates.models import ActionReceipt, Mandate, Money, OutcomeAttestation
 from agent_mandates.scope import VIOLATION_DESCRIPTIONS, allowed_beyond_mandate, scope_violations
-from agent_mandates.signing import SignedEnvelope, verified_signers
+from agent_mandates.signing import (
+    SignedEnvelope,
+    author_signed,
+    required_signer,
+    verified_signers,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -132,6 +138,10 @@ def _verify(arguments: argparse.Namespace) -> int:
     if not signers:
         failures.append("no signature checks out against this directory")
 
+    unauthored = _authorship_failure(envelope, public_keys, "the document")
+    if unauthored:
+        failures.append(unauthored)
+
     missing = sorted(set(arguments.require) - signers)
     if missing:
         failures.append(f"required {', '.join(missing)} did not sign")
@@ -171,6 +181,10 @@ def _report_binding(
     if not receipt_signers:
         failures.append("the receipt itself does not verify")
 
+    unauthored = _authorship_failure(envelope, public_keys, "the receipt")
+    if unauthored:
+        failures.append(unauthored)
+
     problems = binding_problems(receipt, outcome)
     if problems:
         _line("binding", "BROKEN")
@@ -196,6 +210,10 @@ def _report_authority(
         _line("mandate", f"{grant.id} granted by {', '.join(sorted(granted_by)) or '-'}")
         if not granted_by:
             failures.append(f"mandate {grant.id} does not verify")
+
+        unauthored = _authorship_failure(envelope, public_keys, f"mandate {grant.id}")
+        if unauthored:
+            failures.append(unauthored)
 
     failures.extend(_report_chain(chain))
     if failures:
@@ -314,8 +332,34 @@ def _describe(payload: ActionReceipt | OutcomeAttestation | Mandate) -> list[tup
     return described
 
 
+def _authorship_failure(envelope: SignedEnvelope, public_keys: PublicKeys, what: str) -> str | None:
+    """Why this document is not signed by the key it names, if it is not.
+
+    A non-empty set of verified signers is not enough. The envelope only
+    requires that a signature *labelled* with the author's key id be present,
+    so any key the directory happens to trust can mint a document in somebody
+    else's name by attaching a junk signature under theirs.
+    """
+    if author_signed(envelope, public_keys):
+        return None
+    return f"{what} is not signed by {required_signer(envelope.payload)}, the key it names"
+
+
+def _printable(value: str) -> str:
+    # Everything here is attacker-controlled and goes straight to a terminal.
+    # A control character can forge a result line, and an ANSI sequence can
+    # conceal the real one, so the report would say VERIFIED for a document
+    # that is not. Escaped rather than stripped, so nothing is silently hidden.
+    return "".join(
+        character
+        if unicodedata.category(character) not in ("Cc", "Cf", "Zl", "Zp")
+        else f"\\u{ord(character):04x}"
+        for character in value
+    )
+
+
 def _line(label: str, value: str) -> None:
-    print(f"{label:<{LABEL_WIDTH}} {value}")
+    print(f"{label:<{LABEL_WIDTH}} {_printable(value)}")
 
 
 def _money(money: Money) -> str:

@@ -172,11 +172,15 @@ def delegate(
         ),
     )
 
-    widened = _attenuation_problems(mandate, delegated)
-    if widened:
+    # Checked against everything a verifier will check, not just attenuation.
+    # Delegating from a grant that had already expired produces a document that
+    # is refused downstream, and finding that out here is better than finding
+    # out when somebody tries to rely on it.
+    problems = delegation_problems(mandate, delegated)
+    if problems:
         raise ValueError(
-            "a delegated grant cannot widen what it received: "
-            + ", ".join(sorted(DELEGATION_PROBLEM_DESCRIPTIONS[problem] for problem in widened))
+            "this delegation would not verify: "
+            + ", ".join(sorted(DELEGATION_PROBLEM_DESCRIPTIONS[problem] for problem in problems))
         )
     return delegated
 

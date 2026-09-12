@@ -22,6 +22,7 @@ from urllib.parse import urlparse
 from pydantic import (
     AfterValidator,
     BaseModel,
+    BeforeValidator,
     ConfigDict,
     PlainSerializer,
     StringConstraints,
@@ -46,7 +47,23 @@ def _canonical_timestamp(moment: datetime) -> datetime:
 
 
 def _format_timestamp(moment: datetime) -> str:
-    return f"{moment:%Y-%m-%dT%H:%M:%S}.{moment.microsecond // 1000:03d}Z"
+    # Built field by field rather than with strftime, whose %Y delegates to the
+    # platform and does not zero-pad years below 1000 everywhere. Canonical
+    # bytes must not depend on which C library is underneath.
+    return (
+        f"{moment.year:04d}-{moment.month:02d}-{moment.day:02d}"
+        f"T{moment.hour:02d}:{moment.minute:02d}:{moment.second:02d}"
+        f".{moment.microsecond // 1000:03d}Z"
+    )
+
+
+def _reject_inexact_amount(amount: object) -> object:
+    # A float cannot represent most decimal amounts exactly, and pydantic would
+    # otherwise coerce one silently: 0.1 + 0.2 would be signed as
+    # 0.30000000000000004. Callers have to say what they mean.
+    if isinstance(amount, float):
+        raise ValueError("amount must not be a float; pass a Decimal or a string")
+    return amount
 
 
 def _canonical_amount(amount: Decimal) -> Decimal:
@@ -55,20 +72,30 @@ def _canonical_amount(amount: Decimal) -> Decimal:
     if amount < 0:
         raise ValueError("amount must not be negative")
 
-    canonical = amount.normalize()
-    # normalize() renders integers carrying trailing zeros in scientific
-    # notation (Decimal 100 becomes 1E+2), which is a second way to write the
-    # same amount. Force the plain integer form instead.
-    #
-    # Only NaN and Infinity carry a non-integer exponent, and both were rejected
-    # above, but the type does not say so.
-    exponent = canonical.as_tuple().exponent
-    if isinstance(exponent, int) and exponent > 0:
-        canonical = canonical.quantize(Decimal(1))
+    # Trailing zeros are stripped by rebuilding the digit tuple rather than with
+    # normalize(), which runs under the thread's decimal context and silently
+    # ROUNDS anything past its precision: an amount of 29 significant digits
+    # came back as 1. Silently changing a value is the exact failure this format
+    # exists to prevent, so the arithmetic here is exact and context-free.
+    sign, digits, exponent = amount.as_tuple()
+    assert isinstance(exponent, int)  # guaranteed finite above
+    while exponent < 0 and digits and digits[-1] == 0:
+        digits = digits[:-1]
+        exponent += 1
+
+    canonical = Decimal((sign, digits or (0,), exponent))
     # Negative zero passes the sign check above and would serialize as "-0".
     if canonical.is_zero():
         canonical = Decimal(0)
     return canonical
+
+
+def _format_amount(amount: Decimal) -> str:
+    # Plain notation always. str() renders small and large magnitudes in
+    # scientific notation (0.0000001 as 1E-7), which the format forbids and
+    # which an independent implementation would write differently, producing
+    # bytes that do not match.
+    return format(amount, "f")
 
 
 def _canonical_text(text: str) -> str:
@@ -95,11 +122,23 @@ def _canonical_scope(scope: tuple[str, ...]) -> tuple[str, ...]:
         raise ValueError("scope must not be empty")
     # A mandate's scope is a set of permissions, so the order it was written in
     # carries no meaning and must not change the bytes we sign.
-    return tuple(sorted(set(scope)))
+    #
+    # Sorted by UTF-16 code unit, matching how RFC 8785 orders object keys.
+    # Python sorts by code point, and the two disagree above U+FFFF, so a
+    # JavaScript implementation sorting the same scope natively would otherwise
+    # produce different bytes.
+    return tuple(sorted(set(scope), key=lambda entry: entry.encode("utf-16-be")))
 
 
 def _require_absolute_http_url(target: str) -> str:
     canonical = _canonical_text(target)
+    # urlsplit strips control characters and tabs before parsing, so checking
+    # its view while storing the original would mean the value that gets signed
+    # is not the value that was validated: "ht<TAB>tps://good@evil" parses as
+    # https://good@evil and would then be stored, and printed, verbatim.
+    if any(unicodedata.category(character) in ("Cc", "Cf") for character in canonical):
+        raise ValueError("target must not contain control characters")
+
     parsed = urlparse(canonical)
     if parsed.scheme not in ("http", "https") or not parsed.netloc:
         raise ValueError("target must be an absolute http(s) URL")
@@ -132,7 +171,9 @@ Identifier = Annotated[
     AfterValidator(_canonical_identifier),
 ]
 FreeText = Annotated[str, StringConstraints(max_length=512), AfterValidator(_canonical_text)]
-CanonicalAmount = Annotated[Decimal, AfterValidator(_canonical_amount)]
+CanonicalAmount = Annotated[
+    Decimal, BeforeValidator(_reject_inexact_amount), AfterValidator(_canonical_amount)
+]
 
 
 class PrincipalType(StrEnum):
@@ -170,7 +211,7 @@ class Money(BaseModel):
     def _serialize_amount(self, amount: Decimal) -> str:
         # Serialized as a string so that no JSON reader can round-trip the
         # value through a float and change the amount that was signed.
-        return str(amount)
+        return _format_amount(amount)
 
 
 class Agent(BaseModel):

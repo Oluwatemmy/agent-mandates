@@ -111,7 +111,7 @@ class SignedEnvelope(BaseModel):
         # An outcome attestation is exempt: it is issued by whichever party
         # observed the result, which the document does not name, and the
         # verifier decides whose attestation it trusts.
-        required = _required_signer(self.payload)
+        required = required_signer(self.payload)
         if required is None:
             return self
 
@@ -120,7 +120,34 @@ class SignedEnvelope(BaseModel):
         return self
 
 
-def _required_signer(payload: SignedDocument) -> str | None:
+def author_signed(
+    envelope: SignedEnvelope, public_keys: Mapping[str, ed25519.Ed25519PublicKey]
+) -> bool:
+    """Whether the key a document names as its author actually signed it.
+
+    This is the question that matters, and it is not the one verified_signers
+    answers. A mandate names the principal granting it and a receipt names the
+    acting agent, but the envelope can only require that a signature *labelled*
+    with that key is present -- parsing has no keys to verify against, and
+    anyone may attach a signature bearing somebody else's key id.
+
+    So a caller asking only "did anything verify?" accepts a grant forged by any
+    key it happens to trust, with a junk signature labelled as the principal's
+    sitting beside it. This joins the two halves, and no document should be
+    accepted without it.
+
+    An outcome attestation names no author, since it is issued by whichever
+    party observed the result; for those this is vacuously true and the caller
+    decides whose attestation it trusts.
+    """
+    required = required_signer(envelope.payload)
+    if required is None:
+        return True
+    return required in verified_signers(envelope, public_keys)
+
+
+def required_signer(payload: SignedDocument) -> str | None:
+    """The key id a document names as its author, if it names one."""
     if isinstance(payload, ActionReceipt):
         # The receipt asserts what this agent did.
         return payload.agent.key_id
@@ -159,7 +186,11 @@ def verified_signers(
 
     Deliberately not a boolean. A caller must decide whether the keys that
     actually signed are the ones it trusts, and returning "valid" alone would
-    let that question be skipped. Signatures from unknown keys are ignored
+    let that question be skipped.
+
+    This reports who signed. It does **not** check that the document's named
+    author is among them, and a non-empty result is therefore not sufficient to
+    accept a document. Use author_signed for that. Signatures from unknown keys are ignored
     rather than failing the envelope, so an attacker cannot invalidate someone
     else's evidence by appending a signature to it.
     """

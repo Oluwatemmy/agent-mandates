@@ -22,6 +22,9 @@ it should not be. Concretely:
 - a grant that passes checks despite widening what it was delegated
 - a receipt accepted against a mandate it was not taken under
 - input that crashes a verifier rather than being refused
+- a document accepted although the key it names as its author never signed it
+- attacker-controlled text reaching a terminal unescaped, letting a document
+  forge or conceal part of the verifier's own output
 
 ## What does not
 

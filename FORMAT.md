@@ -23,15 +23,25 @@ reader can round-trip the value through a float and change what was signed.
 
 Reduced to one written form:
 
+Always written in plain notation. Scientific notation is never produced, at
+any magnitude, because an independent implementation would render the same
+amount differently and the bytes would not match.
+
+Trailing zeros are stripped exactly, without arithmetic. An implementation that
+normalizes through a fixed-precision decimal context will silently round large
+amounts, which changes the value being signed.
+
 | Written | Canonical | Rule |
 |---|---|---|
 | `42.50` | `42.5` | trailing zeros removed |
 | `100.00` | `100` | trailing zeros removed |
 | `1E+2` | `100` | never scientific notation |
+| `1E-7` | `0.0000001` | never scientific notation, at any magnitude |
+| `1.0000000000000000000000000000001` | unchanged | never rounded |
 | `0.00` | `0` | |
 | `-0` | `0` | negative zero is zero |
 
-Rejected: negative, `NaN`, `Infinity`.
+Rejected: negative, `NaN`, `Infinity`, and any binary floating point value, which cannot represent most decimal amounts exactly.
 
 Currency is a separate field and MUST be a three-letter uppercase code. No
 per-currency precision is applied — `100` is `100` whether the currency has two
@@ -79,8 +89,11 @@ accepted where a receipt ID is required.
 
 ## Collections
 
-- **Mandate scope** is a set of permissions: sorted and deduplicated. The order
-  a caller writes it in carries no meaning and MUST NOT change the bytes.
+- **Mandate scope** is a set of permissions: deduplicated, and sorted by
+  **UTF-16 code unit** exactly as object keys are. The order a caller writes it
+  in carries no meaning and MUST NOT change the bytes. Sorting by code point
+  instead would disagree above U+FFFF, so an implementation using a language
+  whose native sort is UTF-16 would produce different bytes.
 - **Decision reasons** are a sequence: order is preserved, because it records
   the order the policy produced them.
 
@@ -96,7 +109,9 @@ Stored verbatim after NFC normalization. Deliberately not passed through a
 normalizing URL type: those append a trailing slash to a bare origin, which
 would make the signed bytes differ from the target the caller supplied.
 
-Validated as an absolute `http`/`https` URL with a host.
+Validated as an absolute `http`/`https` URL with a host, and MUST NOT contain
+control or format characters. URL parsers commonly strip those before parsing,
+so a value validated after stripping would not be the value that gets signed.
 
 ## Serialization
 
@@ -162,6 +177,12 @@ canonical document back through canonicalization returns it unchanged.
   actually verifies is a separate question. An outcome attestation carries no
   such constraint, because its signer is the platform rather than the agent, and
   the verifier decides whose signature it trusts.
+- A verifier MUST check that the key a document names as its author is among
+  those that actually verified. The requirement above that such a signature be
+  *present* is structural, checked while parsing, when no keys are available.
+  Anyone may attach a signature bearing somebody else's key id, so a document
+  that merely has *some* valid signature has not been authenticated: any key a
+  verifier trusts could otherwise mint a grant in another party's name.
 - Verification reports **which keys verified**, never a bare boolean. A caller
   has to decide whether the keys that actually signed are the ones it trusts,
   and returning "valid" alone would let that question be skipped.
@@ -413,6 +434,17 @@ which catches both a cycle and an agent delegating to itself.
 
 Problems are reported per position rather than flattened: knowing a chain is
 broken is much less useful than knowing which hop broke it.
+
+## Displaying a document
+
+Every identifier, target and reason in a document is written by whoever signed
+it, and a verifier that prints them is printing attacker-controlled text. A
+consumer MUST escape control and format characters before display: otherwise a
+document can forge a line of the verifier's own output and conceal the real
+result with a terminal escape sequence.
+
+This is a display rule, not a canonicalization rule. The signed bytes are
+unaffected.
 
 ## Versioning
 

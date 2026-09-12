@@ -7,6 +7,11 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # This job runs the test suite and installs dependencies, so it executes
+    # third-party code. It needs nothing but a public checkout, and the OIDC
+    # token deliberately lives in the publish job instead.
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

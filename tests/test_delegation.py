@@ -293,7 +293,7 @@ def test_delegate_narrows_what_it_is_given(root):
 def test_delegate_refuses_to_build_a_widening_grant(root, widening):
     # The verifying side checks this too, since documents arrive from outside,
     # but a widening grant should not be producible by accident.
-    with pytest.raises(ValueError, match="cannot widen what it received"):
+    with pytest.raises(ValueError, match="would not verify"):
         delegate(
             root, to=Agent(id="agent:sub", key_id="key-2"), issued_at=root.issued_at, **widening
         )
