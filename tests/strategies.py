@@ -126,7 +126,6 @@ receipts = st.builds(
     mandate_hash=digests,
     action=actions,
     decision=decisions,
-    prev=st.none() | receipt_ids,
 )
 
 outcomes = st.builds(

@@ -215,7 +215,7 @@ class Mandate(BaseModel):
 
     model_config = SIGNED_DOCUMENT
 
-    v: Literal["0.2"] = "0.2"
+    v: Literal["0.3"] = "0.3"
     type: Literal["mandate"] = "mandate"
     id: MandateId
     issued_at: UtcTimestamp
@@ -258,7 +258,7 @@ class ActionReceipt(BaseModel):
 
     model_config = SIGNED_DOCUMENT
 
-    v: Literal["0.2"] = "0.2"
+    v: Literal["0.3"] = "0.3"
     type: Literal["action"] = "action"
     id: ReceiptId
     issued_at: UtcTimestamp
@@ -271,9 +271,6 @@ class ActionReceipt(BaseModel):
     mandate_hash: Sha256Digest
     action: Action
     decision: Decision
-    # Set when this action was taken by an agent acting on behalf of another
-    # agent, so a chain of hops can be walked back to a single principal.
-    prev: ReceiptId | None = None
 
 
 class OutcomeAttestation(BaseModel):
@@ -285,7 +282,7 @@ class OutcomeAttestation(BaseModel):
 
     model_config = SIGNED_DOCUMENT
 
-    v: Literal["0.2"] = "0.2"
+    v: Literal["0.3"] = "0.3"
     type: Literal["outcome"] = "outcome"
     id: OutcomeId
     receipt_id: ReceiptId

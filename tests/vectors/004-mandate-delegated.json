@@ -23,7 +23,7 @@
     },
     "delegated_from": {
       "mandate_id": "mndt_aaaa1111bbbb2222cccc3333dddd4444",
-      "mandate_hash": "sha256:235afb121f14e82dde427d7ea9b796f8ac1c75a8bc0ac9435b1420841eff0412",
+      "mandate_hash": "sha256:1094a92bbace49279a4d481cf60edbdef8bd9c9d2606a7063596a7e871451384",
       "agent": {
         "id": "agent:cafe\u0301-bot",
         "key_id": "key-1"
@@ -31,7 +31,7 @@
     }
   },
   "canonical": {
-    "v": "0.2",
+    "v": "0.3",
     "type": "mandate",
     "id": "mndt_bbbb2222cccc3333dddd4444eeee5555",
     "issued_at": "2026-09-09T09:00:00.000Z",
@@ -54,17 +54,17 @@
     },
     "delegated_from": {
       "mandate_id": "mndt_aaaa1111bbbb2222cccc3333dddd4444",
-      "mandate_hash": "sha256:235afb121f14e82dde427d7ea9b796f8ac1c75a8bc0ac9435b1420841eff0412",
+      "mandate_hash": "sha256:1094a92bbace49279a4d481cf60edbdef8bd9c9d2606a7063596a7e871451384",
       "agent": {
         "id": "agent:caf\u00e9-bot",
         "key_id": "key-1"
       }
     }
   },
-  "canonical_bytes_sha256": "96099090c02bfd9fb6db3b3ff197176e06cbc7fa05af848bcd2473510a07aa27",
+  "canonical_bytes_sha256": "cc1497ca15b191671e0645e49580a50ee37d3900d80a7006cbe50b632e95f55a",
   "envelope": {
     "payload": {
-      "v": "0.2",
+      "v": "0.3",
       "type": "mandate",
       "id": "mndt_bbbb2222cccc3333dddd4444eeee5555",
       "issued_at": "2026-09-09T09:00:00.000Z",
@@ -87,7 +87,7 @@
       },
       "delegated_from": {
         "mandate_id": "mndt_aaaa1111bbbb2222cccc3333dddd4444",
-        "mandate_hash": "sha256:235afb121f14e82dde427d7ea9b796f8ac1c75a8bc0ac9435b1420841eff0412",
+        "mandate_hash": "sha256:1094a92bbace49279a4d481cf60edbdef8bd9c9d2606a7063596a7e871451384",
         "agent": {
           "id": "agent:caf\u00e9-bot",
           "key_id": "key-1"
@@ -98,7 +98,7 @@
       {
         "alg": "Ed25519",
         "key_id": "key-1",
-        "value": "6CENfM0MyFrHDySINgsZyyqTLfA1AgvIgOgWUR2XKwdZEBvG3zJ_gqmbbR2ufLnr2IdKAZmzXOm6CRg5F2UtDA"
+        "value": "NVPQRh5p45dsszYtd4keNSx2ueJyw-VwI1naAbNJvFOTM2I0Aj9euc894OCp-HENBaLcNZLcSn7bxR4z1Ju6Dg"
       }
     ]
   }

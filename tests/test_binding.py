@@ -142,7 +142,6 @@ def test_the_digest_covers_canonical_bytes_not_the_written_form(receipt):
     ("path", "replacement"),
     [
         (("id",), "rcpt_ffffffffffffffffffffffffffffffff"),
-        (("prev",), "rcpt_11111111111111111111111111111111"),
         (("issued_at",), "2027-01-01T00:00:00.000Z"),
         (("principal", "id"), "user:9999"),
         (("action", "value", "amount"), "4200"),

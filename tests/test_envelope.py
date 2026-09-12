@@ -83,7 +83,6 @@ def test_payload_key_order_does_not_affect_verification():
     [
         ("id", "rcpt_ffffffffffffffffffffffffffffffff"),
         ("issued_at", "2027-01-01T00:00:00.000Z"),
-        ("prev", "rcpt_11111111111111111111111111111111"),
     ],
 )
 def test_changing_any_payload_field_breaks_verification(field, replacement):

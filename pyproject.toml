@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "agent-receipts"
-version = "0.2.0"
+version = "0.3.0"
 description = "Signed, independently verifiable records of what an AI agent did and what happened as a result."
 requires-python = ">=3.11"
 license = "Apache-2.0"

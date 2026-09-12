@@ -14,7 +14,7 @@
       "key_id": "principal-key"
     },
     "mandate_id": "mndt_aaaa1111bbbb2222cccc3333dddd4444",
-    "mandate_hash": "sha256:235afb121f14e82dde427d7ea9b796f8ac1c75a8bc0ac9435b1420841eff0412",
+    "mandate_hash": "sha256:1094a92bbace49279a4d481cf60edbdef8bd9c9d2606a7063596a7e871451384",
     "action": {
       "type": "payment.charge",
       "target": "https://api.example.com",
@@ -29,7 +29,7 @@
     }
   },
   "canonical": {
-    "v": "0.2",
+    "v": "0.3",
     "type": "action",
     "id": "rcpt_0123456789abcdef0123456789abcdef",
     "issued_at": "2026-09-09T14:03:11.999Z",
@@ -43,7 +43,7 @@
       "key_id": "principal-key"
     },
     "mandate_id": "mndt_aaaa1111bbbb2222cccc3333dddd4444",
-    "mandate_hash": "sha256:235afb121f14e82dde427d7ea9b796f8ac1c75a8bc0ac9435b1420841eff0412",
+    "mandate_hash": "sha256:1094a92bbace49279a4d481cf60edbdef8bd9c9d2606a7063596a7e871451384",
     "action": {
       "type": "payment.charge",
       "target": "https://api.example.com",
@@ -58,10 +58,10 @@
       "reasons": []
     }
   },
-  "canonical_bytes_sha256": "289f4dc760da2e07a9f5d57f95dffdaacb152213982a72aecb9158455acd6162",
+  "canonical_bytes_sha256": "d4232c5d4e992675561e0ff95d229365b305620ea7b74c01b01726efbf0c7068",
   "envelope": {
     "payload": {
-      "v": "0.2",
+      "v": "0.3",
       "type": "action",
       "id": "rcpt_0123456789abcdef0123456789abcdef",
       "issued_at": "2026-09-09T14:03:11.999Z",
@@ -75,7 +75,7 @@
         "key_id": "principal-key"
       },
       "mandate_id": "mndt_aaaa1111bbbb2222cccc3333dddd4444",
-      "mandate_hash": "sha256:235afb121f14e82dde427d7ea9b796f8ac1c75a8bc0ac9435b1420841eff0412",
+      "mandate_hash": "sha256:1094a92bbace49279a4d481cf60edbdef8bd9c9d2606a7063596a7e871451384",
       "action": {
         "type": "payment.charge",
         "target": "https://api.example.com",
@@ -94,7 +94,7 @@
       {
         "alg": "Ed25519",
         "key_id": "key-1",
-        "value": "NKeuTEzslGRPTChyyaFSnmWV_T2b9aEcm_NVPwT2nJjlmIXUZazEnKBLfy34vnpUlJFaRk0UnhqLdfDY_bZNAg"
+        "value": "B3hHOX8PFdJgre4eY7fum9xDqQ--ZllpMcE7ZsoNq4ReYsNFZHa9VWkzbynOte24JjxYrKzELErfD3fGXq7uDA"
       }
     ]
   }

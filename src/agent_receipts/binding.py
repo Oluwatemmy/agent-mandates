@@ -133,7 +133,6 @@ def receipt_under(
     decision: Decision,
     issued_at: datetime,
     receipt_id: str | None = None,
-    prev: str | None = None,
 ) -> ActionReceipt:
     """Record an action taken under a grant.
 
@@ -151,7 +150,6 @@ def receipt_under(
         mandate_hash=mandate_digest(mandate),
         action=action,
         decision=decision,
-        prev=prev,
     )
 
 
