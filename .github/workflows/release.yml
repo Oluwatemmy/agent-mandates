@@ -1,0 +1,49 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install
+        run: python -m pip install -e ".[dev]" build twine
+
+      # Publishing something the tests have not passed on is not worth the
+      # convenience of a shorter workflow.
+      - name: Test
+        run: python -m pytest -q
+
+      - name: Build
+        run: python -m build
+
+      - name: Check metadata
+        run: python -m twine check dist/*
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: distributions
+          path: dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      # Trusted publishing: PyPI verifies this workflow through OIDC, so no API
+      # token has to exist anywhere to be leaked.
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: distributions
+          path: dist/
+
+      - uses: pypa/gh-action-pypi-publish@release/v1

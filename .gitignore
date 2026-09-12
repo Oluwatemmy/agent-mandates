@@ -6,5 +6,6 @@ build/
 dist/
 *.egg-info/
 .pytest_cache/
+.hypothesis/
 *.pem
 *.key

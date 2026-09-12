@@ -5,12 +5,42 @@ build-backend = "hatchling.build"
 [project]
 name = "agent-mandates"
 version = "0.3.0"
-description = "Signed, independently verifiable records of what an AI agent did and what happened as a result."
+description = "Who authorized an AI agent to act, whether it stayed inside those bounds, and what it cost when it did not."
+readme = "README.md"
+keywords = [
+    "ai-agents",
+    "agentic-commerce",
+    "audit-trail",
+    "delegation",
+    "ed25519",
+    "rfc8785",
+    "verifiable-credentials",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Financial and Insurance Industry",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Security :: Cryptography",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
 requires-python = ">=3.11"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
 authors = [{name = "Ajayi Oluwaseyi Temitope"}]
 dependencies = ["pydantic>=2.9", "cryptography>=42.0"]
+
+[project.urls]
+Homepage = "https://github.com/Oluwatemmy/agent-mandates"
+Repository = "https://github.com/Oluwatemmy/agent-mandates"
+Issues = "https://github.com/Oluwatemmy/agent-mandates/issues"
+Changelog = "https://github.com/Oluwatemmy/agent-mandates/blob/main/CHANGELOG.md"
+Specification = "https://github.com/Oluwatemmy/agent-mandates/blob/main/FORMAT.md"
 
 [project.optional-dependencies]
 # Formatters and type checkers change their output between minor releases, so
@@ -26,6 +56,11 @@ dev = [
 
 [project.scripts]
 mandates = "agent_mandates.cli:main"
+
+[tool.hatch.build.targets.sdist]
+# Tests and vectors ship so a downstream packager can verify the release;
+# the Hypothesis example database is machine-local noise.
+exclude = [".hypothesis", ".venv"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/agent_mandates"]
