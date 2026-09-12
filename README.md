@@ -50,8 +50,12 @@ suite runs that file, so it cannot drift from the library.
 ```python
 # Alice grants her shopping agent authority to charge up to 200 USD.
 mandate = Mandate(
-    id=new_mandate_id(), issued_at=now, principal=alice, agent=shopper,
-    scope=("payment.charge",), expires_at=now + timedelta(days=30),
+    id=new_mandate_id(),
+    issued_at=now,
+    principal=alice,
+    agent=shopper,
+    scope=("payment.charge",),
+    expires_at=now + timedelta(days=30),
     max_value=Money(amount=Decimal("200.00"), currency="USD"),
 )
 
@@ -59,15 +63,18 @@ mandate = Mandate(
 # binding cannot be mistyped.
 receipt = receipt_under(
     mandate,
-    action=Action(type="payment.charge", target="https://shop.example.com/v1/orders",
-                  params_hash=..., value=Money(amount=Decimal("79.99"), currency="USD")),
+    action=Action(
+        type="payment.charge",
+        target="https://shop.example.com/v1/orders",
+        params_hash=...,
+        value=Money(amount=Decimal("79.99"), currency="USD"),
+    ),
     decision=Decision(outcome=DecisionOutcome.ALLOW),
     issued_at=now + timedelta(minutes=2),
 )
 
 # Two days later the merchant attests what happened.
-outcome = outcome_for(receipt, status=OutcomeStatus.COMPLETED,
-                      issued_at=now + timedelta(days=2))
+outcome = outcome_for(receipt, status=OutcomeStatus.COMPLETED, issued_at=now + timedelta(days=2))
 
 envelope = sign(mandate, "alice", alice_key)
 ```

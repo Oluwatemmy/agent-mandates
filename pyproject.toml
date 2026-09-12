@@ -13,7 +13,16 @@ authors = [{name = "Ajayi Oluwaseyi Temitope"}]
 dependencies = ["pydantic>=2.9", "cryptography>=42.0"]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0", "rfc8785>=0.1", "hypothesis>=6.100", "mypy>=1.11", "ruff>=0.6"]
+# Formatters and type checkers change their output between minor releases, so
+# an unpinned one means CI and a developer machine can disagree about whether
+# the tree is clean. Compatible-release pins keep them in step.
+dev = [
+    "pytest>=8.0",
+    "rfc8785>=0.1",
+    "hypothesis>=6.100",
+    "mypy~=2.3",
+    "ruff~=0.16.7",
+]
 
 [project.scripts]
 receipts = "agent_receipts.cli:main"
