@@ -60,9 +60,7 @@ receipt = receipt_under(
 )
 
 # Two days later the merchant attests what happened.
-outcome = outcome_for(
-    receipt, status=OutcomeStatus.COMPLETED, issued_at=now + timedelta(days=2)
-)
+outcome = outcome_for(receipt, status=OutcomeStatus.COMPLETED, issued_at=now + timedelta(days=2))
 
 envelope = sign(mandate, "alice", alice_key)
 ```
