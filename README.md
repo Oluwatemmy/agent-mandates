@@ -1,12 +1,24 @@
+<div align="center">
+
 # agent-mandates
 
-[![PyPI](https://img.shields.io/pypi/v/agent-mandates)](https://pypi.org/project/agent-mandates/)
-[![CI](https://github.com/Oluwatemmy/agent-mandates/actions/workflows/ci.yml/badge.svg)](https://github.com/Oluwatemmy/agent-mandates/actions/workflows/ci.yml)
-[![Python](https://img.shields.io/pypi/pyversions/agent-mandates)](https://pypi.org/project/agent-mandates/)
-[![License](https://img.shields.io/pypi/l/agent-mandates)](LICENSE)
+### Provable authority for AI agents
+
+[![PyPI](https://img.shields.io/pypi/v/agent-mandates?color=blue)](https://pypi.org/project/agent-mandates/)
+[![License](https://img.shields.io/pypi/l/agent-mandates?color=success)](LICENSE)
+[![Python](https://img.shields.io/pypi/pyversions/agent-mandates?logo=python&logoColor=white)](https://pypi.org/project/agent-mandates/)
+[![CI](https://img.shields.io/github/actions/workflow/status/Oluwatemmy/agent-mandates/ci.yml?branch=main&label=CI&logo=github)](https://github.com/Oluwatemmy/agent-mandates/actions/workflows/ci.yml)
+
+---
 
 Who authorized an AI agent to do something, whether it stayed inside those
 bounds, and what it cost when it did not.
+
+[Specification](FORMAT.md) &bull; [Changelog](CHANGELOG.md) &bull; [Security](SECURITY.md) &bull; [Contributing](CONTRIBUTING.md)
+
+</div>
+
+---
 
 Three linked documents, each signed by the party actually making the claim:
 
