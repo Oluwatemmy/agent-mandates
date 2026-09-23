@@ -1,9 +1,9 @@
 {
-  "description": "An action taken under vector 000, written non-canonically and bound to that grant by hash.",
+  "description": "A second action by the same agent, linked to vector 001 so a reader can tell nothing between them is missing.",
   "document_type": "action",
   "input": {
-    "id": "rcpt_0123456789abcdef0123456789abcdef",
-    "issued_at": "2026-09-09T16:03:11.999400+02:00",
+    "id": "rcpt_aaaabbbbccccddddeeeeffff00001111",
+    "issued_at": "2026-09-09T14:05:00.000Z",
     "agent": {
       "id": "agent:cafe\u0301-bot",
       "key_id": "key-1"
@@ -20,19 +20,21 @@
       "target": "https://api.example.com",
       "params_hash": "sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
       "value": {
-        "amount": "42.50",
+        "amount": "7.25",
         "currency": "USD"
       }
     },
     "decision": {
       "outcome": "allow"
-    }
+    },
+    "prev": "rcpt_0123456789abcdef0123456789abcdef",
+    "prev_hash": "sha256:289f4dc760da2e07a9f5d57f95dffdaacb152213982a72aecb9158455acd6162"
   },
   "canonical": {
     "v": "0.2",
     "type": "action",
-    "id": "rcpt_0123456789abcdef0123456789abcdef",
-    "issued_at": "2026-09-09T14:03:11.999Z",
+    "id": "rcpt_aaaabbbbccccddddeeeeffff00001111",
+    "issued_at": "2026-09-09T14:05:00.000Z",
     "agent": {
       "id": "agent:caf\u00e9-bot",
       "key_id": "key-1"
@@ -49,22 +51,24 @@
       "target": "https://api.example.com",
       "params_hash": "sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
       "value": {
-        "amount": "42.5",
+        "amount": "7.25",
         "currency": "USD"
       }
     },
     "decision": {
       "outcome": "allow",
       "reasons": []
-    }
+    },
+    "prev": "rcpt_0123456789abcdef0123456789abcdef",
+    "prev_hash": "sha256:289f4dc760da2e07a9f5d57f95dffdaacb152213982a72aecb9158455acd6162"
   },
-  "canonical_bytes_sha256": "289f4dc760da2e07a9f5d57f95dffdaacb152213982a72aecb9158455acd6162",
+  "canonical_bytes_sha256": "2f01b5d9f46473ddd939425e52dd0ce2fe3616109b23447eac578f291b1eb3b9",
   "envelope": {
     "payload": {
       "v": "0.2",
       "type": "action",
-      "id": "rcpt_0123456789abcdef0123456789abcdef",
-      "issued_at": "2026-09-09T14:03:11.999Z",
+      "id": "rcpt_aaaabbbbccccddddeeeeffff00001111",
+      "issued_at": "2026-09-09T14:05:00.000Z",
       "agent": {
         "id": "agent:caf\u00e9-bot",
         "key_id": "key-1"
@@ -81,20 +85,22 @@
         "target": "https://api.example.com",
         "params_hash": "sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
         "value": {
-          "amount": "42.5",
+          "amount": "7.25",
           "currency": "USD"
         }
       },
       "decision": {
         "outcome": "allow",
         "reasons": []
-      }
+      },
+      "prev": "rcpt_0123456789abcdef0123456789abcdef",
+      "prev_hash": "sha256:289f4dc760da2e07a9f5d57f95dffdaacb152213982a72aecb9158455acd6162"
     },
     "signatures": [
       {
         "alg": "Ed25519",
         "key_id": "key-1",
-        "value": "NKeuTEzslGRPTChyyaFSnmWV_T2b9aEcm_NVPwT2nJjlmIXUZazEnKBLfy34vnpUlJFaRk0UnhqLdfDY_bZNAg"
+        "value": "t0zjGsWPxxJPwuXiDeg1jKqj5QLJBY2Q6uNP_AHK0HVK6dkA_ZV835871s4rr9pTvOqJChatQFB6PqFX1DNXBg"
       }
     ]
   }

@@ -286,6 +286,35 @@ id but presenting another key.
 An action taken at the instant a mandate is granted is in time; only one
 strictly earlier is a problem.
 
+### A receipt to the one before it
+
+A receipt may carry `prev` and `prev_hash`, naming and committing to the
+agent's previous action. Both are present or neither: an id alone names a
+receipt without committing to it, which proves nothing.
+
+Linking turns a run of receipts into a sequence rather than a pile. Without it
+a receipt proves what it records and says nothing about what is missing, so an
+agent that made five hundred calls and kept receipts for fifty-nine could
+present them as the whole story and every other check here would pass.
+
+| Problem | Meaning |
+|---|---|
+| `previous_id_mismatch` | the receipt names a different predecessor |
+| `previous_hash_mismatch` | the receipt commits to different predecessor content |
+| `not_linked` | the receipt does not link to the one before it |
+| `first_is_linked` | the run begins part-way through a longer sequence |
+| `out_of_order` | the receipt is dated before the one it follows |
+| `different_agent` | the run changes which agent is acting |
+
+A run belongs to one agent, compared whole as agents are everywhere else: a
+different signing key is a different agent, and its actions form their own run.
+
+**What this cannot do.** It catches deletion or reordering *within* what was
+handed over. It cannot catch an agent that simply stopped recording, or that
+kept a second run it never showed anybody, because nothing here is outside the
+agent's control. Detecting that needs an anchor this format does not provide --
+a published append-only log, or a counterparty who saw the actions.
+
 ## Authority
 
 A mandate is a document in its own right, signed by the **principal** who grants

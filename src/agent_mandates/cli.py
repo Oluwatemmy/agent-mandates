@@ -23,8 +23,10 @@ from pydantic import ValidationError
 from agent_mandates.binding import (
     MANDATE_PROBLEM_DESCRIPTIONS,
     PROBLEM_DESCRIPTIONS,
+    SEQUENCE_PROBLEM_DESCRIPTIONS,
     binding_problems,
     mandate_problems,
+    sequence_problems,
 )
 from agent_mandates.delegation import (
     DELEGATION_PROBLEM_DESCRIPTIONS,
@@ -68,7 +70,8 @@ def main(argv: list[str] | None = None) -> int:
             stream.reconfigure(errors="replace")
 
     parser = argparse.ArgumentParser(
-        prog="mandates", description="Verify signed agent action receipts and outcome attestations."
+        prog="mandates",
+        description="Verify signed agent mandates, action receipts and outcome attestations.",
     )
     commands = parser.add_subparsers(dest="command", required=True)
 
@@ -99,11 +102,60 @@ def main(argv: list[str] | None = None) -> int:
         help="fail unless this key signed; may be repeated",
     )
 
+    sequence = commands.add_parser(
+        "sequence", help="check a run of receipts for gaps or reordering"
+    )
+    sequence.add_argument("envelopes", type=Path, nargs="+", help="receipts, earliest first")
+    sequence.add_argument(
+        "--keys", type=Path, required=True, metavar="JWKS", help="public key directory, as JWKS"
+    )
+
+    arguments = parser.parse_args(argv)
     try:
-        return _verify(parser.parse_args(argv))
+        return _sequence(arguments) if arguments.command == "sequence" else _verify(arguments)
     except InputError as error:
         print(f"error: {error}", file=sys.stderr)
         return BAD_INPUT
+
+
+def _sequence(arguments: argparse.Namespace) -> int:
+    """Report whether a run of receipts is whole, and where it is not."""
+    try:
+        public_keys = read_key_directory(arguments.keys)
+    except (OSError, ValueError) as error:
+        raise InputError(f"cannot read key directory: {error}") from error
+
+    receipts: list[ActionReceipt] = []
+    failures: list[str] = []
+    for path in arguments.envelopes:
+        envelope = _read_envelope(path)
+        receipt = envelope.payload
+        if not isinstance(receipt, ActionReceipt):
+            raise InputError(f"{path} does not contain an action receipt")
+
+        signers = verified_signers(envelope, public_keys)
+        unauthored = _authorship_failure(envelope, public_keys, f"receipt {receipt.id}")
+        _line(f"#{len(receipts)}", f"{receipt.id} signed by {', '.join(sorted(signers)) or '-'}")
+        if unauthored:
+            failures.append(unauthored)
+        receipts.append(receipt)
+
+    positions = sequence_problems(receipts)
+    if any(positions):
+        _line("sequence", "BROKEN")
+        for index, problems in enumerate(positions):
+            for problem in sorted(problems):
+                _line("", f"- at #{index}: {SEQUENCE_PROBLEM_DESCRIPTIONS[problem]}")
+        failures.append("the run is missing receipts or out of order")
+    else:
+        _line("sequence", f"intact, {len(receipts)} receipt(s)")
+
+    if failures:
+        _line("result", f"NOT VERIFIED ({'; '.join(failures)})")
+        return NOT_VERIFIED
+
+    _line("result", "VERIFIED")
+    return VERIFIED
 
 
 def _verify(arguments: argparse.Namespace) -> int:

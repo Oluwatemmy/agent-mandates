@@ -458,3 +458,36 @@ def test_a_chain_given_out_of_order_is_rejected(
     out = capsys.readouterr().out
     assert exit_code == NOT_VERIFIED
     assert "the first grant in the chain is itself delegated" in out
+
+
+def test_the_sequence_command_reports_an_intact_run(tmp_path, keys_file, capsys):
+    from support import FOLLOWING_RECEIPT_VECTOR
+
+    first = write_envelope(tmp_path / "1.json", RECEIPT_VECTOR["envelope"])
+    second = write_envelope(tmp_path / "2.json", FOLLOWING_RECEIPT_VECTOR["envelope"])
+
+    exit_code = main(["sequence", str(first), str(second), "--keys", str(keys_file)])
+
+    out = capsys.readouterr().out
+    assert exit_code == VERIFIED
+    assert "sequence   intact, 2 receipt(s)" in out
+
+
+def test_the_sequence_command_reports_a_gap(tmp_path, keys_file, capsys):
+    from support import FOLLOWING_RECEIPT_VECTOR
+
+    # The second receipt links to a predecessor that was not handed over.
+    only_the_second = write_envelope(tmp_path / "2.json", FOLLOWING_RECEIPT_VECTOR["envelope"])
+
+    exit_code = main(["sequence", str(only_the_second), "--keys", str(keys_file)])
+
+    out = capsys.readouterr().out
+    assert exit_code == NOT_VERIFIED
+    assert "begins part-way through a longer sequence" in out
+
+
+def test_the_sequence_command_rejects_a_non_receipt(tmp_path, mandate_file, keys_file, capsys):
+    exit_code = main(["sequence", str(mandate_file), "--keys", str(keys_file)])
+
+    assert exit_code == BAD_INPUT
+    assert "does not contain an action receipt" in capsys.readouterr().err

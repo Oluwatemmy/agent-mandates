@@ -27,6 +27,7 @@ from pydantic import (
     PlainSerializer,
     StringConstraints,
     field_serializer,
+    model_validator,
 )
 
 # Signed documents are frozen because mutating one after signing silently
@@ -256,7 +257,7 @@ class Mandate(BaseModel):
 
     model_config = SIGNED_DOCUMENT
 
-    v: Literal["0.1"] = "0.1"
+    v: Literal["0.2"] = "0.2"
     type: Literal["mandate"] = "mandate"
     id: MandateId
     issued_at: UtcTimestamp
@@ -299,7 +300,7 @@ class ActionReceipt(BaseModel):
 
     model_config = SIGNED_DOCUMENT
 
-    v: Literal["0.1"] = "0.1"
+    v: Literal["0.2"] = "0.2"
     type: Literal["action"] = "action"
     id: ReceiptId
     issued_at: UtcTimestamp
@@ -312,6 +313,21 @@ class ActionReceipt(BaseModel):
     mandate_hash: Sha256Digest
     action: Action
     decision: Decision
+    # Links to the agent's previous action, so a run of receipts is a sequence
+    # rather than a pile. Without it a receipt proves what it records and says
+    # nothing about what is missing: an agent that made five hundred calls and
+    # produced receipts for fifty-nine would pass every other check here.
+    #
+    # Both together or neither. An id alone names a receipt without committing
+    # to it, which is the mistake this field was removed for once already.
+    prev: ReceiptId | None = None
+    prev_hash: Sha256Digest | None = None
+
+    @model_validator(mode="after")
+    def _link_is_complete(self) -> ActionReceipt:
+        if (self.prev is None) != (self.prev_hash is None):
+            raise ValueError("prev and prev_hash are set together or not at all")
+        return self
 
 
 class OutcomeAttestation(BaseModel):
@@ -323,7 +339,7 @@ class OutcomeAttestation(BaseModel):
 
     model_config = SIGNED_DOCUMENT
 
-    v: Literal["0.1"] = "0.1"
+    v: Literal["0.2"] = "0.2"
     type: Literal["outcome"] = "outcome"
     id: OutcomeId
     receipt_id: ReceiptId

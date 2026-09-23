@@ -25,7 +25,7 @@
     }
   },
   "canonical": {
-    "v": "0.1",
+    "v": "0.2",
     "type": "mandate",
     "id": "mndt_aaaa1111bbbb2222cccc3333dddd4444",
     "issued_at": "2026-09-09T08:00:00.000Z",
@@ -48,10 +48,10 @@
       "currency": "USD"
     }
   },
-  "canonical_bytes_sha256": "8f2d922be6cc3f24f1f2168140a36fe043ed52539e8343e3aefe106a0a6b01d2",
+  "canonical_bytes_sha256": "235afb121f14e82dde427d7ea9b796f8ac1c75a8bc0ac9435b1420841eff0412",
   "envelope": {
     "payload": {
-      "v": "0.1",
+      "v": "0.2",
       "type": "mandate",
       "id": "mndt_aaaa1111bbbb2222cccc3333dddd4444",
       "issued_at": "2026-09-09T08:00:00.000Z",
@@ -78,7 +78,7 @@
       {
         "alg": "Ed25519",
         "key_id": "principal-key",
-        "value": "AGp1sqaC950q8HuewIZDH0OiLYw8yXUnvNer5JCLGZitzBrXu9LsJ0QKrL2iJ7zX1YFiaZDvRds-66AVzn-_DQ"
+        "value": "iAOk27TO0D_YLAb6i5d1IAJjmNKL6gk4T-_rClbKPXLBTzKBCMwi5JgRXTYt7jwfbjpDx0O27I_FMhGxChjoAA"
       }
     ]
   }

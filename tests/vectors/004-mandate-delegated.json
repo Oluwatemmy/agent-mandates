@@ -23,7 +23,7 @@
     },
     "delegated_from": {
       "mandate_id": "mndt_aaaa1111bbbb2222cccc3333dddd4444",
-      "mandate_hash": "sha256:8f2d922be6cc3f24f1f2168140a36fe043ed52539e8343e3aefe106a0a6b01d2",
+      "mandate_hash": "sha256:235afb121f14e82dde427d7ea9b796f8ac1c75a8bc0ac9435b1420841eff0412",
       "agent": {
         "id": "agent:cafe\u0301-bot",
         "key_id": "key-1"
@@ -31,7 +31,7 @@
     }
   },
   "canonical": {
-    "v": "0.1",
+    "v": "0.2",
     "type": "mandate",
     "id": "mndt_bbbb2222cccc3333dddd4444eeee5555",
     "issued_at": "2026-09-09T09:00:00.000Z",
@@ -54,17 +54,17 @@
     },
     "delegated_from": {
       "mandate_id": "mndt_aaaa1111bbbb2222cccc3333dddd4444",
-      "mandate_hash": "sha256:8f2d922be6cc3f24f1f2168140a36fe043ed52539e8343e3aefe106a0a6b01d2",
+      "mandate_hash": "sha256:235afb121f14e82dde427d7ea9b796f8ac1c75a8bc0ac9435b1420841eff0412",
       "agent": {
         "id": "agent:caf\u00e9-bot",
         "key_id": "key-1"
       }
     }
   },
-  "canonical_bytes_sha256": "5548b1af6eb14f1fbd62e10d2e59ce19d12f847ebf1e1eb9a295b46fbce39bcf",
+  "canonical_bytes_sha256": "96099090c02bfd9fb6db3b3ff197176e06cbc7fa05af848bcd2473510a07aa27",
   "envelope": {
     "payload": {
-      "v": "0.1",
+      "v": "0.2",
       "type": "mandate",
       "id": "mndt_bbbb2222cccc3333dddd4444eeee5555",
       "issued_at": "2026-09-09T09:00:00.000Z",
@@ -87,7 +87,7 @@
       },
       "delegated_from": {
         "mandate_id": "mndt_aaaa1111bbbb2222cccc3333dddd4444",
-        "mandate_hash": "sha256:8f2d922be6cc3f24f1f2168140a36fe043ed52539e8343e3aefe106a0a6b01d2",
+        "mandate_hash": "sha256:235afb121f14e82dde427d7ea9b796f8ac1c75a8bc0ac9435b1420841eff0412",
         "agent": {
           "id": "agent:caf\u00e9-bot",
           "key_id": "key-1"
@@ -98,7 +98,7 @@
       {
         "alg": "Ed25519",
         "key_id": "key-1",
-        "value": "_taSrAAbJp5ZsahMfRvPGj9t5CY-JNlpYIRdhBSqy92lc4ZtzW9gJJHHWhaIKDqzJ98Hn6OIHMqWh-7Lyp73Bg"
+        "value": "6CENfM0MyFrHDySINgsZyyqTLfA1AgvIgOgWUR2XKwdZEBvG3zJ_gqmbbR2ufLnr2IdKAZmzXOm6CRg5F2UtDA"
       }
     ]
   }

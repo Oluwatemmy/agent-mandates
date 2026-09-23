@@ -23,8 +23,10 @@ each other.
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Sequence
 from datetime import datetime
 from enum import StrEnum
+from itertools import pairwise
 
 from agent_mandates.canonical import canonical_bytes
 from agent_mandates.models import (
@@ -50,6 +52,15 @@ class MandateProblem(StrEnum):
     ACTION_PRECEDES_MANDATE = "action_precedes_mandate"
 
 
+class SequenceProblem(StrEnum):
+    PREVIOUS_ID_MISMATCH = "previous_id_mismatch"
+    PREVIOUS_HASH_MISMATCH = "previous_hash_mismatch"
+    NOT_LINKED = "not_linked"
+    FIRST_IS_LINKED = "first_is_linked"
+    OUT_OF_ORDER = "out_of_order"
+    DIFFERENT_AGENT = "different_agent"
+
+
 class BindingProblem(StrEnum):
     RECEIPT_ID_MISMATCH = "receipt_id_mismatch"
     RECEIPT_HASH_MISMATCH = "receipt_hash_mismatch"
@@ -71,6 +82,59 @@ PROBLEM_DESCRIPTIONS = {
     BindingProblem.OUTCOME_PRECEDES_ACTION: "the outcome is dated before the action it reports on",
     BindingProblem.ACTION_WAS_REFUSED: "the receipt records a refused action, which has no outcome",
 }
+
+
+SEQUENCE_PROBLEM_DESCRIPTIONS = {
+    SequenceProblem.PREVIOUS_ID_MISMATCH: "the receipt names a different predecessor",
+    SequenceProblem.PREVIOUS_HASH_MISMATCH: "the receipt commits to different predecessor content",
+    SequenceProblem.NOT_LINKED: "the receipt does not link to the one before it",
+    SequenceProblem.FIRST_IS_LINKED: "the run begins part-way through a longer sequence",
+    SequenceProblem.OUT_OF_ORDER: "the receipt is dated before the one it follows",
+    SequenceProblem.DIFFERENT_AGENT: "the run changes which agent is acting",
+}
+
+
+def sequence_problems(receipts: Sequence[ActionReceipt]) -> tuple[frozenset[SequenceProblem], ...]:
+    """Problems at each position in a run of receipts, earliest first.
+
+    A receipt proves what it records and says nothing about what is missing.
+    Linking each one to its predecessor makes a run a sequence rather than a
+    pile: an agent that made five hundred calls and kept receipts for fifty-nine
+    cannot present them as the whole story, because the links do not close.
+
+    What this catches is deletion or reordering **within** what was handed over.
+    It cannot catch an agent that simply stopped recording, or that kept a
+    second sequence it never showed anybody. Detecting that needs an anchor
+    outside the agent's control, which this format does not provide.
+
+    Reported per position rather than flattened, because knowing a run is broken
+    matters much less than knowing where.
+    """
+    if not receipts:
+        return ()
+
+    first = {SequenceProblem.FIRST_IS_LINKED} if receipts[0].prev is not None else set()
+    links = (_link_problems(earlier, later) for earlier, later in pairwise(receipts))
+    return (frozenset(first), *links)
+
+
+def _link_problems(earlier: ActionReceipt, later: ActionReceipt) -> frozenset[SequenceProblem]:
+    if later.prev is None:
+        return frozenset({SequenceProblem.NOT_LINKED})
+
+    problems = set()
+    if later.prev != earlier.id:
+        problems.add(SequenceProblem.PREVIOUS_ID_MISMATCH)
+    if later.prev_hash != receipt_digest(earlier):
+        problems.add(SequenceProblem.PREVIOUS_HASH_MISMATCH)
+    if later.issued_at < earlier.issued_at:
+        problems.add(SequenceProblem.OUT_OF_ORDER)
+    # Compared whole, as agents are everywhere else: a different signing key is
+    # a different agent, and its actions belong to its own run.
+    if later.agent != earlier.agent:
+        problems.add(SequenceProblem.DIFFERENT_AGENT)
+
+    return frozenset(problems)
 
 
 def mandate_digest(mandate: Mandate) -> str:
@@ -133,6 +197,7 @@ def receipt_under(
     decision: Decision,
     issued_at: datetime,
     receipt_id: str | None = None,
+    prev: ActionReceipt | None = None,
 ) -> ActionReceipt:
     """Record an action taken under a grant.
 
@@ -140,6 +205,9 @@ def receipt_under(
     receipt hash: a document built by hand is one transcription error away from
     being unbindable, and the error surfaces only when somebody needs it as
     evidence.
+
+    Pass the agent's previous receipt as prev to link them into a run, so a
+    later reader can tell whether anything between them is missing.
     """
     return ActionReceipt(
         id=receipt_id or new_receipt_id(),
@@ -150,6 +218,8 @@ def receipt_under(
         mandate_hash=mandate_digest(mandate),
         action=action,
         decision=decision,
+        prev=prev.id if prev else None,
+        prev_hash=receipt_digest(prev) if prev else None,
     )
 
 

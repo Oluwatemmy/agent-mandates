@@ -4,7 +4,29 @@ Package versions and format versions are separate. This file tracks **package**
 releases; the version in a document's `v` field tracks the **wire format**, and
 a release that fixes a bug without touching the format will not change it.
 
-## 0.1.0 — unreleased
+## 0.2.0 — unreleased
+
+Implements **format 0.2**.
+
+### Added
+
+- **Linked receipts.** A receipt may carry `prev` and `prev_hash`, committing to
+  the agent's previous action, so a run is a sequence rather than a pile.
+  Without it a receipt proves what it records and says nothing about what is
+  missing — an agent that made five hundred calls and kept receipts for
+  fifty-nine would pass every other check. `sequence_problems` reports gaps,
+  reordering and splices, per position. It cannot catch an agent that simply
+  stopped recording; that needs an anchor outside the agent's control.
+- `mandates sequence` — check a run of receipts for gaps from the command line.
+- `permits` — the scope check, asked before acting rather than after. Same
+  rules, and not enforcement: nothing sits between an agent and what it calls.
+
+### Changed
+
+- Format version 0.2. Receipts gained two optional fields, so documents signed
+  under 0.1 do not validate against 0.2 and vice versa.
+
+## 0.1.0 — 2026-09-23
 
 First release. Implements **format 0.1**.
 

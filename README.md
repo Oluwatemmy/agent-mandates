@@ -114,6 +114,24 @@ For the rest, the point of a signed grant is that somebody else can enforce it:
 a framework, a proxy, or the provider taking the requests. The grant is portable
 evidence of what was permitted, whoever ends up refusing.
 
+## Did it show you everything?
+
+A receipt proves what it records and says nothing about what is missing. Link
+each one to the agent's previous action and a run becomes a sequence, so a
+selective subset cannot be presented as the whole story:
+
+```console
+$ mandates sequence run/*.json --keys jwks.json
+#0         rcpt_0123... signed by shopper
+#1         rcpt_aaaa... signed by shopper
+sequence   intact, 2 receipt(s)
+result     VERIFIED
+```
+
+Pass `prev=` to `receipt_under` and the link is built for you. It catches
+deletion and reordering within what you were handed. It cannot catch an agent
+that simply stopped recording — nothing here is outside the agent's control.
+
 ## Verify
 
 Anyone holding the published keys can check the chain:
