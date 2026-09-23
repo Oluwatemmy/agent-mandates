@@ -80,6 +80,40 @@ envelope = sign(mandate, "alice", alice_key)
 [`examples/walkthrough.py`](examples/walkthrough.py) is the whole flow, runnable.
 The test suite executes it, so it cannot drift from the library.
 
+## Ask before acting
+
+The same check reads just as well *before* an action as after it. An agent that
+consults its own grant stops a runaway loop at the second call instead of the
+five-hundredth:
+
+```python
+from agent_mandates.scope import permits
+
+refusals = permits(grant, proposed_action, at=datetime.now(UTC))
+if refusals:
+    ...  # stop, and ask a human
+```
+
+```console
+$ python examples/preflight.py
+grant: video.generate, up to 200 USD, expires in 2 hours
+
+the batch that was asked for   go ahead
+the loop that ran away         STOP
+                               - the action's value is above the mandate's limit
+reaching into local files      STOP
+                               - the action type is not in the mandate's scope
+```
+
+This is **not enforcement**. Nothing here sits between an agent and the thing it
+is calling, and an agent that lies about what it did will not honestly ask
+permission first. It catches the honest failures — a loop that misread its
+instructions, a job retried until it drained a budget — which are most of them.
+
+For the rest, the point of a signed grant is that somebody else can enforce it:
+a framework, a proxy, or the provider taking the requests. The grant is portable
+evidence of what was permitted, whoever ends up refusing.
+
 ## Verify
 
 Anyone holding the published keys can check the chain:

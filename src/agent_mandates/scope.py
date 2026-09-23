@@ -14,9 +14,10 @@ assume the pair has already been matched.
 
 from __future__ import annotations
 
+from datetime import datetime
 from enum import StrEnum
 
-from agent_mandates.models import ActionReceipt, DecisionOutcome, Mandate
+from agent_mandates.models import Action, ActionReceipt, DecisionOutcome, Mandate
 
 
 class ScopeViolation(StrEnum):
@@ -42,13 +43,27 @@ def scope_violations(mandate: Mandate, receipt: ActionReceipt) -> frozenset[Scop
     Reports all violations rather than the first, for the same reason binding
     does: whoever has to act on the report needs to see the whole picture.
     """
+    return permits(mandate, receipt.action, at=receipt.issued_at)
+
+
+def permits(mandate: Mandate, action: Action, *, at: datetime) -> frozenset[ScopeViolation]:
+    """Every way this action would fall outside the mandate, or an empty set.
+
+    The same check as scope_violations, asked before acting rather than after.
+    An agent that consults its own grant catches a runaway loop or a misread
+    instruction before the money is spent, rather than documenting it
+    afterwards.
+
+    It is not enforcement. Nothing here sits between an agent and the thing it
+    is calling, and an agent that lies about what it did will not honestly ask
+    permission first. This catches the honest failures, which are most of them.
+    """
     violations = set()
-    action = receipt.action
 
     if action.type not in mandate.scope:
         violations.add(ScopeViolation.ACTION_OUTSIDE_SCOPE)
 
-    if receipt.issued_at > mandate.expires_at:
+    if at > mandate.expires_at:
         violations.add(ScopeViolation.MANDATE_EXPIRED)
 
     # A mandate with no ceiling places no monetary limit on the action, and an

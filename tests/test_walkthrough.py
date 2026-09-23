@@ -66,3 +66,16 @@ def test_the_published_directory_holds_only_public_keys(written):
 
     assert "seed" not in published
     assert '"d"' not in published  # the JWK member a private key would occupy
+
+
+import preflight  # noqa: E402
+
+
+def test_the_preflight_example_runs_and_refuses_the_runaway(capsys):
+    # An example nobody runs is an example that stops working.
+    preflight.main()
+
+    out = capsys.readouterr().out
+    assert "the batch that was asked for  go ahead" in out.replace("   ", "  ")
+    assert "value is above the mandate's limit" in out
+    assert "not in the mandate's scope" in out
