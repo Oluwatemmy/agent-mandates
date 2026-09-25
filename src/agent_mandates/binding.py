@@ -110,9 +110,14 @@ def sequence_problems(receipts: Sequence[ActionReceipt]) -> tuple[frozenset[Sequ
 
     Reported per position rather than flattened, because knowing a run is broken
     matters much less than knowing where.
+
+    An empty run raises rather than reporting nothing. A caller writing the
+    idiomatic `if any(sequence_problems(run))` would otherwise read "no receipts
+    were handed over" as "nothing is wrong", which is the opposite of what an
+    empty run means when somebody was asked to produce one.
     """
     if not receipts:
-        return ()
+        raise ValueError("an empty run is not an intact run; there is nothing to check")
 
     first = {SequenceProblem.FIRST_IS_LINKED} if receipts[0].prev is not None else set()
     links = (_link_problems(earlier, later) for earlier, later in pairwise(receipts))

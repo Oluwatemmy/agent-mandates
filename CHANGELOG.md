@@ -34,6 +34,10 @@ Implements **format 0.2**.
   zero. Previously an action with no value was treated as not engaging the
   limit, which left a one-line way around the only number in the grant: omit
   the value and spend anything. Reported as `value_not_stated`.
+- **An empty chain or run is refused rather than reported as sound.**
+  `chain_problems([])` and `sequence_problems([])` returned no positions, and
+  `any(())` is false, so the idiomatic check read "there is nothing here" as
+  "nothing is wrong". `accountable_principal` already refused the same input.
 - Format version 0.2. Receipts gained two optional fields, so documents signed
   under 0.1 do not validate against 0.2 and vice versa.
 
