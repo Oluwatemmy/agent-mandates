@@ -215,6 +215,63 @@ signature and only `crv` and `x` decide what the key is. Both are validated
 strictly, including that `x` decodes as base64url with no invalid characters
 discarded and yields exactly 32 bytes.
 
+### Key ids that carry their own key
+
+A `key_id` is an opaque identifier, so nothing above says where a verifier is
+supposed to find the key it names. Publishing a JWKS is one answer. The other
+is to put the key **inside** the identifier, which this format supports as a
+convention rather than a new field: an implementation MAY name a key with a
+`did:key` identifier, and a verifier SHOULD resolve one without consulting a
+directory.
+
+The encoding is the one the `did:key` method already defines for Ed25519, so
+identifiers are the same strings other implementations produce:
+
+```
+did:key:z<base58btc(0xed 0x01 || <32-byte public key>)>
+```
+
+`0xed 0x01` is the multicodec tag for an Ed25519 public key, written as a
+varint. `base58btc` is multibase's base58 alphabet, selected by the leading
+`z`, which omits `0`, `O`, `I` and `l`. Ed25519 identifiers are always 56
+characters.
+
+A verifier resolving one MUST reject anything that is not exactly an Ed25519
+key: a character outside the alphabet, a different multicodec tag, or a body
+that is not 32 bytes. The tag is checked **before** the length, so a 32-byte
+key under another algorithm's tag is refused as the wrong algorithm rather
+than accepted as the right one. This is the same reason `alg` is a fixed value
+rather than something a document selects.
+
+A directory MAY list a `did:key` alongside ordinary entries. If it does, the
+listed key MUST equal the key the identifier carries; one identifier naming
+two different keys MUST be rejected when the directory is read, not when a
+signature later fails.
+
+#### What this settles, and what it does not
+
+Resolving a self-describing key proves that the signature came from the key
+named in the identifier. That is all it proves. It does **not** establish that
+the key belongs to anyone in particular, because anybody can mint a `did:key`
+in a microsecond and sign whatever they like with it. A document can therefore
+verify perfectly and still be worthless, if the principal at the root of its
+authority is somebody you have never heard of.
+
+Listing a key in a directory is the part that says *whose* key it is. So the
+division is:
+
+- an **agent** key is well suited to being self-describing. It is generated per
+  deployment and would otherwise have to be registered somewhere before the
+  agent could act at all.
+- a **principal** key is what a verifier has to actually recognise, whether it
+  learns it from a directory, a contract, or an earlier exchange. A principal
+  named only by a `did:key` nobody recognises grants nothing worth relying on.
+
+A verifier that reports which signatures checked out SHOULD say which of them
+were self-describing, so this distinction is visible to whoever reads the
+result rather than resting on their noticing the shape of an identifier.
+
+
 ## Binding documents together
 
 ### An outcome to its receipt

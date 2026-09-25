@@ -27,6 +27,18 @@ Implements **format 0.2**.
   countersign the envelope instead, which is stronger and already supported.
 - `permits` — the scope check, asked before acting rather than after. Same
   rules, and not enforcement: nothing sits between an agent and what it calls.
+- **Key ids that carry their own key.** A key may be named by a `did:key`
+  identifier, which encodes the public key into the id, so a document signed by
+  one verifies with no directory on hand — useful for an agent whose keypair is
+  generated per deployment and would otherwise have to be registered somewhere
+  before it could act. `KeyDirectory` resolves them and goes wherever a
+  directory goes; `--keys` is now optional. Not a format change: `key_id` was
+  already a free identifier, so this is a convention plus a resolver, and the
+  encoding is the one `did:key` already defines so the identifiers match what
+  other implementations produce. It proves the named key signed and nothing
+  more — a `did:key` is trivial to mint, so a principal still has to be someone
+  the verifier recognises. Self-describing signers are marked as such in the
+  verifier's output so that distinction is visible.
 
 ### Changed
 

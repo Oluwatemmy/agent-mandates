@@ -1,8 +1,8 @@
 """Command line verifier.
 
-Reads an envelope and a key directory, and reports what the document says and
-which keys signed it. Given an outcome and the receipt it reports on, also
-reports whether the two are actually bound together.
+Reads an envelope and, where one is needed, a key directory, and reports what
+the document says and which keys signed it. Given an outcome and the receipt it
+reports on, also reports whether the two are actually bound together.
 
 Both files are read from the local filesystem: fetching a key directory over the
 network would pull in redirect handling, TLS policy and SSRF exposure, none of
@@ -33,7 +33,7 @@ from agent_mandates.delegation import (
     accountable_principal,
     chain_problems,
 )
-from agent_mandates.keys import read_key_directory
+from agent_mandates.keys import KeyDirectory, is_did_key, read_key_directory
 from agent_mandates.models import ActionReceipt, Mandate, Money, OutcomeAttestation
 from agent_mandates.scope import VIOLATION_DESCRIPTIONS, allowed_beyond_mandate, scope_violations
 from agent_mandates.signing import (
@@ -78,7 +78,10 @@ def main(argv: list[str] | None = None) -> int:
     verify = commands.add_parser("verify", help="check the signatures on an envelope")
     verify.add_argument("envelope", type=Path, help="signed envelope, as JSON")
     verify.add_argument(
-        "--keys", type=Path, required=True, metavar="JWKS", help="public key directory, as JWKS"
+        "--keys",
+        type=Path,
+        metavar="JWKS",
+        help="public key directory, as JWKS; not needed for did:key signers",
     )
     verify.add_argument(
         "--receipt",
@@ -107,7 +110,10 @@ def main(argv: list[str] | None = None) -> int:
     )
     sequence.add_argument("envelopes", type=Path, nargs="+", help="receipts, earliest first")
     sequence.add_argument(
-        "--keys", type=Path, required=True, metavar="JWKS", help="public key directory, as JWKS"
+        "--keys",
+        type=Path,
+        metavar="JWKS",
+        help="public key directory, as JWKS; not needed for did:key signers",
     )
 
     arguments = parser.parse_args(argv)
@@ -120,10 +126,7 @@ def main(argv: list[str] | None = None) -> int:
 
 def _sequence(arguments: argparse.Namespace) -> int:
     """Report whether a run of receipts is whole, and where it is not."""
-    try:
-        public_keys = read_key_directory(arguments.keys)
-    except (OSError, ValueError) as error:
-        raise InputError(f"cannot read key directory: {error}") from error
+    public_keys = _public_keys(arguments.keys)
 
     receipts: list[ActionReceipt] = []
     failures: list[str] = []
@@ -135,7 +138,7 @@ def _sequence(arguments: argparse.Namespace) -> int:
 
         signers = verified_signers(envelope, public_keys)
         unauthored = _authorship_failure(envelope, public_keys, f"receipt {receipt.id}")
-        _line(f"#{len(receipts)}", f"{receipt.id} signed by {', '.join(sorted(signers)) or '-'}")
+        _line(f"#{len(receipts)}", f"{receipt.id} signed by {_signers(signers)}")
         if unauthored:
             failures.append(unauthored)
         receipts.append(receipt)
@@ -159,10 +162,7 @@ def _sequence(arguments: argparse.Namespace) -> int:
 
 
 def _verify(arguments: argparse.Namespace) -> int:
-    try:
-        public_keys = read_key_directory(arguments.keys)
-    except (OSError, ValueError) as error:
-        raise InputError(f"cannot read key directory: {error}") from error
+    public_keys = _public_keys(arguments.keys)
 
     envelope = _read_envelope(arguments.envelope)
     payload = envelope.payload
@@ -184,7 +184,7 @@ def _verify(arguments: argparse.Namespace) -> int:
     signers = verified_signers(envelope, public_keys)
     for label, value in _describe(envelope.payload):
         _line(label, value)
-    _line("signed by", ", ".join(sorted(signers)) if signers else "-")
+    _line("signed by", _signers(signers))
 
     failures: list[str] = []
     if not signers:
@@ -218,6 +218,37 @@ def _verify(arguments: argparse.Namespace) -> int:
 
     _line("result", "VERIFIED")
     return VERIFIED
+
+
+def _public_keys(path: Path | None) -> KeyDirectory:
+    """The keys to check signatures against.
+
+    A directory is optional because a did:key signer carries its own key, so a
+    document signed only by one is checkable with nothing on hand. Anything
+    else fails as an unknown signer, which is the honest answer: without the
+    directory there is no way to tell whose key that was.
+    """
+    if path is None:
+        return KeyDirectory()
+    try:
+        return KeyDirectory(read_key_directory(path))
+    except (OSError, ValueError) as error:
+        raise InputError(f"cannot read key directory: {error}") from error
+
+
+def _signers(signers: frozenset[str]) -> str:
+    """Key ids as a report line, marking the ones that vouch for themselves.
+
+    A did:key verifies without the directory, which is convenient and easy to
+    over-read: it proves the named key signed, never that the key is anybody a
+    reader should trust. Marked so that distinction is visible at a glance
+    rather than resting on whether the reader recognises the id's shape.
+    """
+    if not signers:
+        return "-"
+    return ", ".join(
+        f"{key_id} [self-described]" if is_did_key(key_id) else key_id for key_id in sorted(signers)
+    )
 
 
 def _report_binding(
@@ -259,7 +290,7 @@ def _report_authority(
 
     for envelope, grant in mandates:
         granted_by = verified_signers(envelope, public_keys)
-        _line("mandate", f"{grant.id} granted by {', '.join(sorted(granted_by)) or '-'}")
+        _line("mandate", f"{grant.id} granted by {_signers(granted_by)}")
         if not granted_by:
             failures.append(f"mandate {grant.id} does not verify")
 
