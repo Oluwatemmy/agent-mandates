@@ -48,3 +48,17 @@ def test_canonical_form_is_a_fixed_point(vector_path):
     revalidated = document_type.model_validate(vector["canonical"])
 
     assert canonical_json_value(revalidated) == vector["canonical"]
+
+
+def test_the_cited_evidence_digest_matches_the_artifact_shipped_with_it():
+    # The vector carries the artifact's bytes so another implementation can
+    # confirm it hashes them the same way: raw, exactly as received, with no
+    # canonicalization applied to somebody else's file.
+    import hashlib
+
+    from support import OUTCOME_VECTOR
+
+    artifact = OUTCOME_VECTOR["evidence_artifacts"]["provider.report"]["bytes_utf8"]
+    cited = OUTCOME_VECTOR["canonical"]["evidence"][0]
+
+    assert cited["digest"] == "sha256:" + hashlib.sha256(artifact.encode("utf-8")).hexdigest()

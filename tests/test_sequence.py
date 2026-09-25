@@ -116,8 +116,12 @@ def test_a_single_receipt_is_a_valid_run(run):
     assert sequence_problems([run[0]]) == (frozenset(),)
 
 
-def test_an_empty_run_has_no_positions():
-    assert sequence_problems([]) == ()
+def test_an_empty_run_is_refused_rather_than_called_intact():
+    # `if any(sequence_problems(run))` on an empty run would otherwise read as
+    # "nothing is wrong", which is the opposite of what handing over no receipts
+    # means when somebody was asked to produce them.
+    with pytest.raises(ValueError, match="nothing to check"):
+        sequence_problems([])
 
 
 def test_the_golden_vector_links_to_its_predecessor():

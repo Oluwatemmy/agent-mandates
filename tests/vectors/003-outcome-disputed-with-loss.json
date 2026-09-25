@@ -1,5 +1,5 @@
 {
-  "description": "Disputed outcome carrying a loss. Scientific-notation and sub-millisecond input reduce to one form. Bound to vector 001.",
+  "description": "Disputed outcome carrying a loss and citing a provider's report. Scientific-notation and sub-millisecond input reduce to one form. Bound to vector 001.",
   "document_type": "outcome",
   "input": {
     "id": "outc_11112222333344445555666677778888",
@@ -11,7 +11,14 @@
     "loss": {
       "amount": "1E+2",
       "currency": "EUR"
-    }
+    },
+    "evidence": [
+      {
+        "kind": "provider.report",
+        "source": "video-provider",
+        "digest": "sha256:5b9cd24535ba683ecc32eb3eb7aadee13f82916a2b847aa088257eb490804eb5"
+      }
+    ]
   },
   "canonical": {
     "v": "0.2",
@@ -25,9 +32,16 @@
     "loss": {
       "amount": "100",
       "currency": "EUR"
-    }
+    },
+    "evidence": [
+      {
+        "kind": "provider.report",
+        "source": "video-provider",
+        "digest": "sha256:5b9cd24535ba683ecc32eb3eb7aadee13f82916a2b847aa088257eb490804eb5"
+      }
+    ]
   },
-  "canonical_bytes_sha256": "f4e03295f082e16f6892d2df6144f67bc30748a584fd0bea2373f514a688c8bc",
+  "canonical_bytes_sha256": "8c5d5afac683478978299ad967ed096066eb8602674af1471b149819b91acfb1",
   "envelope": {
     "payload": {
       "v": "0.2",
@@ -41,14 +55,27 @@
       "loss": {
         "amount": "100",
         "currency": "EUR"
-      }
+      },
+      "evidence": [
+        {
+          "kind": "provider.report",
+          "source": "video-provider",
+          "digest": "sha256:5b9cd24535ba683ecc32eb3eb7aadee13f82916a2b847aa088257eb490804eb5"
+        }
+      ]
     },
     "signatures": [
       {
         "alg": "Ed25519",
         "key_id": "merchant-key",
-        "value": "xhyNnkBg3hJ1H_pdzY7gFaT0QzMK32SZ5-8wphHsjMrKw8SdyCWwoDnKvdMagnBUQ-5uHNv7ikp1aXLvhkX9Bw"
+        "value": "axqILAONp4f76mu3oI5q4-Y_7o0iJIA84rYiKwz66KFWBPA2P2mz_jV08PBn0M3vF-602GMqYyBhVLKUC_tZBQ"
       }
     ]
+  },
+  "evidence_artifacts": {
+    "provider.report": {
+      "bytes_utf8": "provider incident report: 500 requests attributed to the agent\n",
+      "note": "Hashed exactly as received, not canonicalized."
+    }
   }
 }

@@ -15,9 +15,10 @@
     "receipt_id": "rcpt_0123456789abcdef0123456789abcdef",
     "receipt_hash": "sha256:289f4dc760da2e07a9f5d57f95dffdaacb152213982a72aecb9158455acd6162",
     "issued_at": "2026-09-23T09:11:02.000Z",
-    "status": "completed"
+    "status": "completed",
+    "evidence": []
   },
-  "canonical_bytes_sha256": "7723cc7a57b92a8ffc43c719c7fbee5482833ab0b0a85e4988de0a980a2b8d67",
+  "canonical_bytes_sha256": "80babad72e155ddcb6f8c5c87eeb465a09f9d1cbc85b4589e429ee4ee72cc9eb",
   "envelope": {
     "payload": {
       "v": "0.2",
@@ -26,13 +27,14 @@
       "receipt_id": "rcpt_0123456789abcdef0123456789abcdef",
       "receipt_hash": "sha256:289f4dc760da2e07a9f5d57f95dffdaacb152213982a72aecb9158455acd6162",
       "issued_at": "2026-09-23T09:11:02.000Z",
-      "status": "completed"
+      "status": "completed",
+      "evidence": []
     },
     "signatures": [
       {
         "alg": "Ed25519",
         "key_id": "merchant-key",
-        "value": "NWIrl6jGudgMNR8GYjl6aKbw_C4SVffzHO3C9-wdVBucdCotCptiDUMkBDona2-ULmkKnIwNaQKvVJrsss7CAg"
+        "value": "aRnaOJYJO4kTK54YCeqLjO8JDj5biHnq4Eiw5dolrIKFxAI89dsY3UdRHigG6Zo0okrwlYqp83xG0XbwYfMLBg"
       }
     ]
   }

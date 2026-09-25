@@ -330,6 +330,34 @@ class ActionReceipt(BaseModel):
         return self
 
 
+class Evidence(BaseModel):
+    """An artifact from somebody who is not a party to this format.
+
+    A provider's report, a payment settlement record, a mail server's
+    acceptance. The outcome commits to its digest rather than carrying it, for
+    the same reason action parameters are hashed: the commitment travels, the
+    content stays wherever it already is.
+
+    This is a commitment, not a proof. It pins the attester to one specific
+    artifact, so they cannot later produce a different report and claim it was
+    the one they meant. Whoever holds the original can check the digest. Nobody
+    here can check what the artifact says.
+
+    A counterparty willing to participate should countersign the envelope
+    instead, which is strictly stronger and needs none of this.
+    """
+
+    model_config = SIGNED_DOCUMENT
+
+    kind: Identifier
+    source: Identifier
+    # sha256 over the artifact's bytes exactly as received -- a PDF, an email,
+    # an API response body. NOT canonicalized: canonicalization applies to this
+    # format's own values, and a foreign artifact has a byte sequence of its
+    # own that its issuer will hash the same way.
+    digest: Sha256Digest
+
+
 class OutcomeAttestation(BaseModel):
     """What ultimately happened as a result of a previously receipted action.
 
@@ -351,6 +379,11 @@ class OutcomeAttestation(BaseModel):
     status: OutcomeStatus
     resolution: DisputeResolution | None = None
     loss: Money | None = None
+    # Artifacts from outside this format that the attester is committing to. A
+    # dispute commonly cites more than one: a settlement record and a provider's
+    # report. Order is preserved, since it is the order the attester chose to
+    # present them in.
+    evidence: tuple[Evidence, ...] = ()
 
 
 def new_receipt_id() -> str:

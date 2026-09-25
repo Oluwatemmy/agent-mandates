@@ -381,6 +381,10 @@ def _describe(payload: ActionReceipt | OutcomeAttestation | Mandate) -> list[tup
         described.append(("resolution", payload.resolution))
     if payload.loss is not None:
         described.append(("loss", _money(payload.loss)))
+    for cited in payload.evidence:
+        # Shown, never checked: the artifact lives outside this format and
+        # only whoever holds it can confirm the digest.
+        described.append(("evidence", f"{cited.kind} from {cited.source} ({cited.digest})"))
     return described
 
 

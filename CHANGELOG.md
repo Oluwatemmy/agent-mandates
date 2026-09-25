@@ -18,11 +18,26 @@ Implements **format 0.2**.
   reordering and splices, per position. It cannot catch an agent that simply
   stopped recording; that needs an anchor outside the agent's control.
 - `mandates sequence` — check a run of receipts for gaps from the command line.
+- **Cited evidence.** An outcome attestation may carry `evidence`: artifacts
+  from outside this format — a provider's report, a settlement record — each a
+  kind, a source and a digest over the artifact's own bytes. It pins the
+  attester to one specific artifact rather than proving what that artifact says,
+  and moves an outcome from the observer's say-so to a commitment somebody
+  holding the original can check. A counterparty willing to sign should
+  countersign the envelope instead, which is stronger and already supported.
 - `permits` — the scope check, asked before acting rather than after. Same
   rules, and not enforcement: nothing sits between an agent and what it calls.
 
 ### Changed
 
+- **An action under a ceiling must state what it cost**, and a free one states
+  zero. Previously an action with no value was treated as not engaging the
+  limit, which left a one-line way around the only number in the grant: omit
+  the value and spend anything. Reported as `value_not_stated`.
+- **An empty chain or run is refused rather than reported as sound.**
+  `chain_problems([])` and `sequence_problems([])` returned no positions, and
+  `any(())` is false, so the idiomatic check read "there is nothing here" as
+  "nothing is wrong". `accountable_principal` already refused the same input.
 - Format version 0.2. Receipts gained two optional fields, so documents signed
   under 0.1 do not validate against 0.2 and vice versa.
 

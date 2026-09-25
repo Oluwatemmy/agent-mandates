@@ -352,6 +352,7 @@ violation rather than the first.
 |---|---|
 | `action_outside_scope` | the action type is not in the mandate's scope |
 | `value_exceeds_limit` | the action's value is above the mandate's limit |
+| `value_not_stated` | the mandate sets a limit and the action does not say what it cost |
 | `limit_currency_mismatch` | the limit is in another currency, so the value cannot be checked against it |
 | `mandate_expired` | the mandate had expired when the action was taken |
 
@@ -362,9 +363,13 @@ everywhere else in the format.
 Boundaries are inclusive. A value exactly at the limit is inside it, and an
 action taken at the instant a mandate expires is in time.
 
-A mandate with no `max_value` places no monetary limit, and an action with no
-`value` does not engage one. Neither is a violation: a mandate covering both
-reads and charges legitimately has a ceiling that only some of its actions meet.
+A mandate with no `max_value` places no monetary limit, so an action under it
+need not state a value.
+
+Under a ceiling, every action MUST state what it cost, and a free one states
+zero. Saying nothing is not the same as spending nothing: an action that omits
+its value would otherwise slip past the only number in the grant, which is a
+one-line way around it.
 
 ### Currency mismatches fail closed
 
@@ -474,6 +479,50 @@ result with a terminal escape sequence.
 
 This is a display rule, not a canonicalization rule. The signed bytes are
 unaffected.
+
+## Citing evidence from outside this format
+
+An outcome attestation may carry `evidence`: artifacts produced by somebody who
+is not a party to this format — a provider's report, a payment settlement
+record, a mail server's acceptance.
+
+```json
+{"kind": "provider.report", "source": "video-provider", "digest": "sha256:..."}
+```
+
+The outcome commits to the digest rather than carrying the artifact, for the
+same reason action parameters are hashed: the commitment travels, the content
+stays where it already is.
+
+### The digest is over foreign bytes, exactly as received
+
+Every other hash in this format covers the canonical bytes of one of its own
+documents. This one does not. A PDF, an email, an API response body has a byte
+sequence of its own, and that sequence is what gets hashed — unchanged,
+uncanonicalized. Canonicalization is a rule about this format's values and has
+nothing to say about somebody else's file.
+
+### What it proves
+
+**That the attester committed to one specific artifact.** It pins them: they
+cannot later produce a different report and claim it was the one they meant.
+Whoever holds the original can check the digest.
+
+**Not what the artifact says.** Nothing here reads it, fetches it, or verifies
+its issuer. A verifier displays what was cited and checks nothing about it.
+
+This moves an outcome from *the observer's say-so* to *the observer committed to
+something checkable*, which is a smaller step than it sounds and the one that
+usually settles an argument, because the disputed question is rarely whether the
+provider's report exists.
+
+### A participating counterparty should countersign instead
+
+If the counterparty is willing to sign, they should add a signature to the
+outcome's envelope rather than being cited in it. That is strictly stronger —
+an independent party attesting the claim itself — and needs nothing from this
+section. Citing evidence is for the common case where the counterparty has
+never heard of this format and never will.
 
 ## Versioning
 

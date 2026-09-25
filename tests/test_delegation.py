@@ -248,8 +248,12 @@ def test_a_chain_at_the_limit_is_allowed(root, delegated):
     assert DelegationProblem.CHAIN_TOO_DEEP not in chain_problems(at_limit)[0]
 
 
-def test_an_empty_chain_has_no_positions():
-    assert chain_problems([]) == ()
+def test_an_empty_chain_is_refused_rather_than_called_sound():
+    # accountable_principal already refuses this input; the two agreed on
+    # nothing, so `if any(chain_problems(chain))` read "there is no chain" as
+    # "the chain is sound".
+    with pytest.raises(ValueError, match="nothing to check"):
+        chain_problems([])
 
 
 def test_an_empty_chain_has_no_principal():

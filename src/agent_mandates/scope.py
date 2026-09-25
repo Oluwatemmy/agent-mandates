@@ -23,6 +23,7 @@ from agent_mandates.models import Action, ActionReceipt, DecisionOutcome, Mandat
 class ScopeViolation(StrEnum):
     ACTION_OUTSIDE_SCOPE = "action_outside_scope"
     VALUE_EXCEEDS_LIMIT = "value_exceeds_limit"
+    VALUE_NOT_STATED = "value_not_stated"
     LIMIT_CURRENCY_MISMATCH = "limit_currency_mismatch"
     MANDATE_EXPIRED = "mandate_expired"
 
@@ -30,6 +31,9 @@ class ScopeViolation(StrEnum):
 VIOLATION_DESCRIPTIONS = {
     ScopeViolation.ACTION_OUTSIDE_SCOPE: "the action type is not in the mandate's scope",
     ScopeViolation.VALUE_EXCEEDS_LIMIT: "the action's value is above the mandate's limit",
+    ScopeViolation.VALUE_NOT_STATED: (
+        "the mandate sets a limit and the action does not say what it cost"
+    ),
     ScopeViolation.LIMIT_CURRENCY_MISMATCH: (
         "the mandate's limit is in another currency, so the value cannot be checked against it"
     ),
@@ -66,12 +70,15 @@ def permits(mandate: Mandate, action: Action, *, at: datetime) -> frozenset[Scop
     if at > mandate.expires_at:
         violations.add(ScopeViolation.MANDATE_EXPIRED)
 
-    # A mandate with no ceiling places no monetary limit on the action, and an
-    # action with no value has nothing to check against one. Neither is a
-    # violation: a mandate covering both reads and charges legitimately has a
-    # limit that only some of its actions engage.
-    if mandate.max_value is not None and action.value is not None:
-        if action.value.currency != mandate.max_value.currency:
+    # A mandate with no ceiling places no monetary limit on the action.
+    if mandate.max_value is not None:
+        if action.value is None:
+            # Under a ceiling, saying nothing is not the same as spending
+            # nothing. An action that omits its value would otherwise slip past
+            # the limit entirely, which is a one-line way around the only number
+            # in the grant. A free action states zero and says so.
+            violations.add(ScopeViolation.VALUE_NOT_STATED)
+        elif action.value.currency != mandate.max_value.currency:
             # Converting would mean inventing an exchange rate, and passing
             # would mean treating an unconstrained currency as constrained.
             # Neither is honest, so this fails closed.

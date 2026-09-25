@@ -110,9 +110,14 @@ def chain_problems(chain: Sequence[Mandate]) -> tuple[frozenset[DelegationProble
     delegating from chain[i - 1] to chain[i]. Reported per position rather than
     flattened, because knowing a chain is broken is much less useful than
     knowing which hop broke it.
+
+    An empty chain raises rather than reporting nothing. A caller writing the
+    idiomatic `if any(chain_problems(chain))` would otherwise read "there is no
+    chain" as "the chain is sound", and accountable_principal already refuses
+    the same input.
     """
     if not chain:
-        return ()
+        raise ValueError("an empty chain is not a sound chain; there is nothing to check")
 
     root_problems = set()
     if chain[0].delegated_from is not None:
