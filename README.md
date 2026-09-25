@@ -155,6 +155,35 @@ Exit codes are `0` verified, `1` not verified, `2` bad input, so the three cases
 can be told apart in a script. `--require KEY_ID` fails unless a particular key
 signed. Repeat `--mandate`, root first, to check a delegation chain.
 
+### Keys that carry themselves
+
+An agent's keypair is usually generated per deployment, and registering it
+somewhere before the agent can act is friction with no payoff. Name it with a
+[`did:key`](https://w3c-ccg.github.io/did-key-spec/) identifier instead and the
+public key travels inside the id, so `--keys` becomes optional:
+
+```console
+$ mandates verify receipt.json
+agent      agent:shopper using did:key:z6MkehRgf7yJbgaGfYsdoAsKdBPE3dj2CYhowQdcjqSJgvVd
+...
+signed by  did:key:z6MkehRgf7yJbgaGfYsdoAsKdBPE3dj2CYhowQdcjqSJgvVd [self-described]
+result     VERIFIED
+```
+
+```python
+from agent_mandates.keys import KeyDirectory, public_key_to_did
+from agent_mandates.signing import author_signed
+
+key_id = public_key_to_did(private_key.public_key())
+author_signed(envelope, KeyDirectory())  # nothing to look the key up in
+```
+
+`[self-described]` is the important part of that output. It means the signature
+came from the key named in the id — not that the key belongs to anyone you know.
+Anyone can mint a `did:key` in a microsecond, so a *principal* still has to be
+someone you recognise; a directory is what says whose key it is. It is the
+*agent* side where this pays off.
+
 ## What it does not do
 
 **It verifies documents, not the world they describe.** An agent signs its own

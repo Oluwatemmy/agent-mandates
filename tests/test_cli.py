@@ -8,7 +8,7 @@ import pytest
 
 from agent_mandates.binding import mandate_digest
 from agent_mandates.cli import BAD_INPUT, NOT_VERIFIED, VERIFIED, main
-from agent_mandates.keys import jwks_from_public_keys
+from agent_mandates.keys import jwks_from_public_keys, public_key_to_did
 from agent_mandates.models import ActionReceipt, Decision, DecisionOutcome, Mandate, Money
 from agent_mandates.signing import sign
 from support import (
@@ -491,3 +491,39 @@ def test_the_sequence_command_rejects_a_non_receipt(tmp_path, mandate_file, keys
 
     assert exit_code == BAD_INPUT
     assert "does not contain an action receipt" in capsys.readouterr().err
+
+
+def test_a_self_describing_signer_verifies_without_a_key_directory(tmp_path, capsys):
+    # No --keys at all. The receipt names the agent by an identifier that
+    # carries its key, so there is nothing left to look up.
+    private = PRIVATE_KEYS["key-1"]
+    did = public_key_to_did(private.public_key())
+    receipt = document(RECEIPT_VECTOR)
+    self_named = receipt.model_copy(
+        update={"agent": receipt.agent.model_copy(update={"key_id": did})}
+    )
+    path = write_envelope(
+        tmp_path / "self-named.json", sign(self_named, did, private).model_dump(mode="json")
+    )
+
+    assert main(["verify", str(path)]) == VERIFIED
+
+    output = capsys.readouterr().out
+    assert did in output
+    # The reader is told the key vouches for itself rather than being
+    # recognised, because a verified signature does not say who the signer is.
+    assert "[self-described]" in output
+
+
+def test_a_listed_signer_is_not_marked_as_self_describing(envelope_file, keys_file, capsys):
+    assert main(["verify", str(envelope_file), "--keys", str(keys_file)]) == VERIFIED
+
+    assert "[self-described]" not in capsys.readouterr().out
+
+
+def test_without_a_directory_an_ordinary_signer_is_unknown(envelope_file, capsys):
+    # Failing rather than quietly accepting: with no directory there is no way
+    # to tell whose key "key-1" was.
+    assert main(["verify", str(envelope_file)]) == NOT_VERIFIED
+
+    assert "no signature checks out" in capsys.readouterr().out
