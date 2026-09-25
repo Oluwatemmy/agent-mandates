@@ -35,6 +35,7 @@ from agent_mandates.models import (
     Decision,
     DecisionOutcome,
     DisputeResolution,
+    Evidence,
     Mandate,
     Money,
     OutcomeAttestation,
@@ -230,6 +231,7 @@ def outcome_for(
     issued_at: datetime,
     resolution: DisputeResolution | None = None,
     loss: Money | None = None,
+    evidence: tuple[Evidence, ...] = (),
     outcome_id: str | None = None,
 ) -> OutcomeAttestation:
     """Attest what happened as a result of a receipted action.
@@ -250,4 +252,5 @@ def outcome_for(
         status=status,
         resolution=resolution,
         loss=loss,
+        evidence=evidence,
     )

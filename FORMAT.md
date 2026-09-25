@@ -480,6 +480,50 @@ result with a terminal escape sequence.
 This is a display rule, not a canonicalization rule. The signed bytes are
 unaffected.
 
+## Citing evidence from outside this format
+
+An outcome attestation may carry `evidence`: artifacts produced by somebody who
+is not a party to this format — a provider's report, a payment settlement
+record, a mail server's acceptance.
+
+```json
+{"kind": "provider.report", "source": "video-provider", "digest": "sha256:..."}
+```
+
+The outcome commits to the digest rather than carrying the artifact, for the
+same reason action parameters are hashed: the commitment travels, the content
+stays where it already is.
+
+### The digest is over foreign bytes, exactly as received
+
+Every other hash in this format covers the canonical bytes of one of its own
+documents. This one does not. A PDF, an email, an API response body has a byte
+sequence of its own, and that sequence is what gets hashed — unchanged,
+uncanonicalized. Canonicalization is a rule about this format's values and has
+nothing to say about somebody else's file.
+
+### What it proves
+
+**That the attester committed to one specific artifact.** It pins them: they
+cannot later produce a different report and claim it was the one they meant.
+Whoever holds the original can check the digest.
+
+**Not what the artifact says.** Nothing here reads it, fetches it, or verifies
+its issuer. A verifier displays what was cited and checks nothing about it.
+
+This moves an outcome from *the observer's say-so* to *the observer committed to
+something checkable*, which is a smaller step than it sounds and the one that
+usually settles an argument, because the disputed question is rarely whether the
+provider's report exists.
+
+### A participating counterparty should countersign instead
+
+If the counterparty is willing to sign, they should add a signature to the
+outcome's envelope rather than being cited in it. That is strictly stronger —
+an independent party attesting the claim itself — and needs nothing from this
+section. Citing evidence is for the common case where the counterparty has
+never heard of this format and never will.
+
 ## Versioning
 
 Every document carries `v`. Any change to a field name, type, or canonical rule

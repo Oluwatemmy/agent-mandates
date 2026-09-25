@@ -265,3 +265,73 @@ def test_receipt_under_binds_to_the_grant_it_was_taken_under(mandate):
     assert mandate_problems(mandate, recorded) == frozenset()
     assert recorded.agent == mandate.agent
     assert recorded.principal == mandate.principal
+
+
+def test_an_outcome_can_cite_evidence_from_outside_this_format(receipt):
+    import hashlib
+
+    from agent_mandates.models import Evidence
+
+    report = b"provider incident report"
+    attested = outcome_for(
+        receipt,
+        status=OutcomeStatus.DISPUTED,
+        issued_at=receipt.issued_at + timedelta(days=2),
+        evidence=(
+            Evidence(
+                kind="provider.report",
+                source="video-provider",
+                digest="sha256:" + hashlib.sha256(report).hexdigest(),
+            ),
+        ),
+    )
+
+    assert binding_problems(receipt, attested) == frozenset()
+    assert attested.evidence[0].digest == "sha256:" + hashlib.sha256(report).hexdigest()
+
+
+def test_cited_evidence_pins_the_attester_to_one_artifact(receipt):
+    # The point is falsifiability, not proof: whoever holds the original can
+    # tell whether it is the one that was cited.
+    import hashlib
+
+    from agent_mandates.models import Evidence
+
+    genuine = b"provider incident report"
+    doctored = b"provider incident report (edited)"
+
+    cited = Evidence(
+        kind="provider.report",
+        source="video-provider",
+        digest="sha256:" + hashlib.sha256(genuine).hexdigest(),
+    )
+
+    assert cited.digest == "sha256:" + hashlib.sha256(genuine).hexdigest()
+    assert cited.digest != "sha256:" + hashlib.sha256(doctored).hexdigest()
+
+
+def test_an_outcome_cites_nothing_by_default(receipt):
+    attested = outcome_for(
+        receipt, status=OutcomeStatus.COMPLETED, issued_at=receipt.issued_at + timedelta(days=1)
+    )
+
+    assert attested.evidence == ()
+    # Absent rather than an empty list in the canonical form would be wrong here:
+    # an empty tuple is not None, so it serializes, and stays stable.
+    assert attested.model_dump(mode="json")["evidence"] == []
+
+
+def test_evidence_order_is_preserved(receipt):
+    from agent_mandates.models import Evidence
+
+    settlement = Evidence(kind="payment.settlement", source="acme", digest="sha256:" + "a" * 64)
+    report = Evidence(kind="provider.report", source="video", digest="sha256:" + "b" * 64)
+
+    attested = outcome_for(
+        receipt,
+        status=OutcomeStatus.DISPUTED,
+        issued_at=receipt.issued_at + timedelta(days=2),
+        evidence=(settlement, report),
+    )
+
+    assert [e.kind for e in attested.evidence] == ["payment.settlement", "provider.report"]
