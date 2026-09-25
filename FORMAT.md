@@ -352,6 +352,7 @@ violation rather than the first.
 |---|---|
 | `action_outside_scope` | the action type is not in the mandate's scope |
 | `value_exceeds_limit` | the action's value is above the mandate's limit |
+| `value_not_stated` | the mandate sets a limit and the action does not say what it cost |
 | `limit_currency_mismatch` | the limit is in another currency, so the value cannot be checked against it |
 | `mandate_expired` | the mandate had expired when the action was taken |
 
@@ -362,9 +363,13 @@ everywhere else in the format.
 Boundaries are inclusive. A value exactly at the limit is inside it, and an
 action taken at the instant a mandate expires is in time.
 
-A mandate with no `max_value` places no monetary limit, and an action with no
-`value` does not engage one. Neither is a violation: a mandate covering both
-reads and charges legitimately has a ceiling that only some of its actions meet.
+A mandate with no `max_value` places no monetary limit, so an action under it
+need not state a value.
+
+Under a ceiling, every action MUST state what it cost, and a free one states
+zero. Saying nothing is not the same as spending nothing: an action that omits
+its value would otherwise slip past the only number in the grant, which is a
+one-line way around it.
 
 ### Currency mismatches fail closed
 

@@ -80,12 +80,34 @@ def test_a_mandate_without_a_ceiling_does_not_limit_value(mandate, receipt):
     assert scope_violations(unlimited, expensive) == frozenset()
 
 
-def test_an_action_without_a_value_does_not_engage_the_ceiling(mandate, receipt):
-    # A mandate covering both reads and charges legitimately has a limit that
-    # only some of its actions engage.
-    reading = with_action(receipt, type="order.create", params_hash=PARAMS_HASH, value=None)
+def test_an_action_under_a_ceiling_must_say_what_it_cost(mandate, receipt):
+    # This once passed: an action with no value was treated as not engaging the
+    # limit, on the reasoning that a mandate covering both reads and charges
+    # legitimately has actions that cost nothing. That left a one-line way
+    # around the only number in the grant -- omit the value and spend anything.
+    silent = with_action(receipt, type="order.create", params_hash=PARAMS_HASH, value=None)
 
-    assert scope_violations(mandate, reading) == frozenset()
+    assert scope_violations(mandate, silent) == {ScopeViolation.VALUE_NOT_STATED}
+
+
+def test_a_free_action_states_zero(mandate, receipt):
+    # The honest version of the case above: nothing was spent, and it says so.
+    free = with_action(
+        receipt,
+        type="order.create",
+        params_hash=PARAMS_HASH,
+        value=Money(amount=Decimal("0"), currency="USD"),
+    )
+
+    assert scope_violations(mandate, free) == frozenset()
+
+
+def test_a_mandate_with_no_ceiling_does_not_require_a_value(mandate, receipt):
+    # Nothing to compare against, so nothing to withhold.
+    unlimited = mandate.model_copy(update={"max_value": None})
+    silent = with_action(receipt, type="order.create", params_hash=PARAMS_HASH, value=None)
+
+    assert scope_violations(unlimited, silent) == frozenset()
 
 
 def test_an_action_after_the_mandate_expired_is_reported(mandate, receipt):

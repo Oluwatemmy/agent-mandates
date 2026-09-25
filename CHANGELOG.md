@@ -23,6 +23,10 @@ Implements **format 0.2**.
 
 ### Changed
 
+- **An action under a ceiling must state what it cost**, and a free one states
+  zero. Previously an action with no value was treated as not engaging the
+  limit, which left a one-line way around the only number in the grant: omit
+  the value and spend anything. Reported as `value_not_stated`.
 - Format version 0.2. Receipts gained two optional fields, so documents signed
   under 0.1 do not validate against 0.2 and vice versa.
 
